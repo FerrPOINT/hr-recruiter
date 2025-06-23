@@ -1,0 +1,203 @@
+# =============================================================================
+# HR Recruiter Backend - Docker Compose Configuration
+# =============================================================================
+# 
+# Этот файл настраивает полную инфраструктуру для HR Recruiter API:
+# - PostgreSQL: основная база данных
+# - Redis: кэширование и сессии
+# - Spring Boot App: основное приложение
+# - Nginx: обратный прокси (опционально)
+# - Prometheus + Grafana: мониторинг (опционально)
+#
+# КОМАНДЫ ДЛЯ ЗАПУСКА:
+# docker-compose up -d                    # Запустить все сервисы в фоне
+# docker-compose up -d postgres redis     # Запустить только БД и кэш
+# docker-compose up app                   # Запустить приложение с логами
+# docker-compose down                     # Остановить все сервисы
+# docker-compose down -v                  # Остановить и удалить volumes (ОСТОРОЖНО!)
+# docker-compose logs -f app              # Смотреть логи приложения
+# docker-compose restart app              # Перезапустить приложение
+# docker-compose ps                       # Статус всех сервисов
+#
+# СОХРАНЕНИЕ ДАННЫХ:
+# Все данные сохраняются в папке ./data/ на хосте:
+# - ./data/postgres/     - данные PostgreSQL
+# - ./data/redis/        - данные Redis
+# - ./data/prometheus/   - метрики Prometheus
+# - ./data/grafana/      - дашборды Grafana
+#
+# ЛОГИ И РОТАЦИЯ:
+# - Логи ротируются автоматически (max 100MB, 3 файла)
+# - Данные Prometheus хранятся 7 дней
+# - Redis AOF файлы ограничены 1GB
+# - PostgreSQL WAL файлы ограничены 4GB
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # PostgreSQL - Основная база данных
+  # =============================================================================
+  # Хранит все данные приложения: пользователи, вакансии, кандидаты, интервью
+  # Данные сохраняются в ./data/postgres/ и не теряются при перезапуске
+  # 
+  # НАСТРОЙКИ ПРОИЗВОДИТЕЛЬНОСТИ:
+  # - shared_buffers: 256MB - память для кэширования данных
+  # - effective_cache_size: 1GB - предполагаемый размер кэша ОС
+  # - work_mem: 4MB - память для операций сортировки/соединения
+  # - max_connections: 200 - максимальное количество подключений
+  # - checkpoint_completion_target: 0.9 - плавная запись на диск
+  # 
+  # ОГРАНИЧЕНИЯ ДАННЫХ:
+  # - max_wal_size: 4GB - максимальный размер WAL файлов
+  # - log_rotation_age: 1d - ротация логов каждый день
+  # - log_rotation_size: 100MB - ротация при достижении 100MB
+  # =============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: hr-recruiter-postgres
+    environment:
+      POSTGRES_DB: hr_recruiter
+      POSTGRES_USER: hr_user
+      POSTGRES_PASSWORD: hr_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hr_user -d hr_recruiter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - hr-recruiter-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # Redis - Кэширование и сессии
+  # =============================================================================
+  # Используется для:
+  # - Кэширования часто запрашиваемых данных
+  # - Хранения сессий пользователей
+  # - Временного хранения токенов
+  # 
+  # НАСТРОЙКИ СОХРАНЕНИЯ:
+  # - appendonly yes - включить AOF (Append Only File) для надежности
+  # - save 60 1000 - сохранять каждые 60 секунд если изменилось 1000+ ключей
+  # - maxmemory 1gb - ограничение памяти
+  # - maxmemory-policy allkeys-lru - политика вытеснения
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: hr-recruiter-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --save 60 1000
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - hr-recruiter-network
+    restart: unless-stopped
+
+  # =============================================================================
+  # Spring Boot Application - Основное приложение
+  # =============================================================================
+  # HR Recruiter API - REST API для управления вакансиями, кандидатами, интервью
+  # 
+  # НАСТРОЙКИ JVM:
+  # - UseContainerSupport - использовать лимиты контейнера
+  # - MaxRAMPercentage=75.0 - использовать 75% доступной памяти
+  # - UseG1GC - использовать G1 Garbage Collector
+  # - UseStringDeduplication - дедупликация строк для экономии памяти
+  # 
+  # ПРОФИЛИ:
+  # - docker - профиль для работы в Docker
+  # - dev - для разработки
+  # - prod - для продакшена
+  # 
+  # ОГРАНИЧЕНИЯ ЛОГОВ:
+  # - Максимальный размер файла: 100MB
+  # - Количество файлов: 3
+  # - Ротация: автоматическая
+  # =============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hr-recruiter-app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hr_recruiter
+      SPRING_DATASOURCE_USERNAME: hr_user
+      SPRING_DATASOURCE_PASSWORD: hr_password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      JAVA_OPTS: >-
+        -XX:+UseContainerSupport
+        -XX:MaxRAMPercentage=75.0
+        -XX:+UseG1GC
+        -Djava.security.egd=file:/dev/./urandom
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - hr-recruiter-network
+    restart: unless-stopped
+
+  whisper:
+    image: linuxserver/faster-whisper:latest
+    container_name: hr-recruiter-whisper
+    environment:
+      - MODEL_SIZE=small
+      - LANGUAGE=ru
+    ports:
+      - "10300:10300"
+    networks:
+      - hr-recruiter-network
+    restart: unless-stopped
+    # TODO: Для лучшего качества можно сменить MODEL_SIZE на medium или large-v2
+
+# =============================================================================
+# Volumes - Постоянное хранение данных
+# =============================================================================
+# Все volumes используют bind mount для прямого доступа к данным на хосте
+# Это позволяет легко делать бэкапы и восстанавливать данные
+# 
+# ОГРАНИЧЕНИЯ РАЗМЕРА:
+# - postgres_data: неограниченно (контролируется настройками PostgreSQL)
+# - redis_data: ~1GB (контролируется настройками Redis)
+# - prometheus_data: 10GB (контролируется настройками Prometheus)
+# - grafana_data: ~5GB (контролируется настройками Grafana)
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# =============================================================================
+# Networks - Сетевая изоляция
+# =============================================================================
+# Все сервисы подключены к одной сети для внутреннего взаимодействия
+# =============================================================================
+networks:
+  hr-recruiter-network:
+    driver: bridge

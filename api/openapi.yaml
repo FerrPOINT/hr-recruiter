@@ -1,0 +1,1886 @@
+openapi: 3.0.0
+info:
+  title: HR Recruiter API
+  version: 1.0.0
+  description: |
+    Полная OpenAPI спецификация для платформы автоматизации.
+    Включает все основные сущности, бизнес-операции, заглушки для AI и медиа, а также примеры для быстрой интеграции.
+servers:
+  - url: http://localhost:8080/api
+    description: Local server
+  - url: https://api.hr-recruiter.com/api
+    description: Production server
+
+tags:
+  - name: Auth
+    description: Аутентификация и управление сессиями
+  - name: Account
+    description: Управление аккаунтом текущего пользователя
+  - name: Positions
+    description: Управление вакансиями
+  - name: Candidates
+    description: Управление кандидатами
+  - name: Interviews
+    description: Управление собеседованиями
+  - name: Questions
+    description: Управление вопросами для собеседований
+  - name: Team & Users
+    description: Управление командой и пользователями
+  - name: Settings
+    description: Настройки системы (тарифы, брендинг)
+  - name: Analytics & Reports
+    description: Статистика и отчеты
+  - name: AI
+    description: Взаимодействие с AI-ассистентом
+
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      tags:
+        - Auth
+      summary: Вход пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags:
+        - Auth
+      summary: Выход пользователя
+      responses:
+        '204':
+          description: Успешный выход
+
+  /account:
+    get:
+      operationId: getAccount
+      tags:
+        - Account
+      summary: Получить профиль текущего пользователя
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      operationId: updateAccount
+      tags:
+        - Account
+      summary: Обновить профиль текущего пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Профиль обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /positions:
+    get:
+      operationId: listPositions
+      tags:
+        - Positions
+      summary: Получить список вакансий
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/PositionStatusEnum'
+          description: Фильтр по статусу
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Поиск по названию
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Position'
+                  total:
+                    type: integer
+    post:
+      operationId: createPosition
+      tags:
+        - Positions
+      summary: Создать новую вакансию
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionCreateRequest'
+      responses:
+        '201':
+          description: Вакансия создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+
+  /positions/{id}:
+    get:
+      operationId: getPosition
+      tags:
+        - Positions
+      summary: Получить вакансию по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+    put:
+      operationId: updatePosition
+      tags:
+        - Positions
+      summary: Обновить вакансию по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionUpdateRequest'
+      responses:
+        '200':
+          description: Вакансия обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+    patch:
+      operationId: partialUpdatePosition
+      tags:
+        - Positions
+      summary: Частично обновить вакансию (для архивации)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  $ref: '#/components/schemas/PositionStatusEnum'
+                  description: Новый статус вакансии
+      responses:
+        '200':
+          description: Вакансия обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+
+  /positions/{id}/public-link:
+    get:
+      operationId: getPositionPublicLink
+      tags:
+        - Positions
+      summary: Получить публичную ссылку на вакансию
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  publicLink:
+                    type: string
+
+  /positions/{id}/stats:
+    get:
+      operationId: getPositionStats
+      tags:
+        - Positions
+      summary: Получить статистику по вакансии
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionStats'
+
+  /positions/{positionId}/questions:
+    get:
+      operationId: listPositionQuestions
+      tags:
+        - Questions
+      summary: Список вопросов по вакансии
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+    post:
+      operationId: createPositionQuestion
+      tags:
+        - Questions
+      summary: Добавить вопрос к вакансии
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionCreateRequest'
+      responses:
+        '201':
+          description: Вопрос добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+
+  /questions:
+    get:
+      operationId: getAllQuestions
+      tags:
+        - Questions
+      summary: Получить список всех вопросов
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+          description: Номер страницы
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+          description: Размер страницы
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: "createdAt"
+          description: Поле для сортировки
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  size:
+                    type: integer
+                  number:
+                    type: integer
+
+  /questions/{id}:
+    get:
+      operationId: getQuestion
+      tags:
+        - Questions
+      summary: Получить вопрос по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '404':
+          description: Вопрос не найден
+    put:
+      operationId: updateQuestion
+      tags:
+        - Questions
+      summary: Обновить вопрос
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionUpdateRequest'
+      responses:
+        '200':
+          description: Вопрос обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+    delete:
+      operationId: deleteQuestion
+      tags:
+        - Questions
+      summary: Удалить вопрос по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Вопрос успешно удален
+
+  /positions/{positionId}/candidates:
+    get:
+      operationId: listPositionCandidates
+      tags:
+        - Candidates
+      summary: Список кандидатов по вакансии
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidate'
+    post:
+      operationId: createPositionCandidate
+      tags:
+        - Candidates
+      summary: Добавить кандидата к вакансии
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateCreateRequest'
+      responses:
+        '201':
+          description: Кандидат добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+
+  /candidates/{id}:
+    get:
+      operationId: getCandidate
+      tags:
+        - Candidates
+      summary: Получить кандидата
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+    put:
+      operationId: updateCandidate
+      tags:
+        - Candidates
+      summary: Обновить кандидата
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateUpdateRequest'
+      responses:
+        '200':
+          description: Кандидат обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+    delete:
+      operationId: deleteCandidate
+      tags:
+        - Candidates
+      summary: Удалить кандидата по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Кандидат успешно удален
+
+  /candidates/{candidateId}/interview:
+    post:
+      operationId: createInterviewFromCandidate
+      tags:
+        - Interviews
+      summary: Создать и начать интервью
+      parameters:
+        - in: path
+          name: candidateId
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+
+  /positions/{positionId}/interviews:
+    get:
+      operationId: listPositionInterviews
+      tags:
+        - Interviews
+      summary: Список собеседований по вакансии
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Interview'
+
+  /interviews:
+    get:
+      operationId: listInterviews
+      tags:
+        - Interviews
+      summary: Получить список всех собеседований
+      description: Возвращает список всех собеседований в системе.
+      parameters:
+        - in: query
+          name: positionId
+          schema:
+            type: string
+          description: Фильтр по ID вакансии
+        - in: query
+          name: candidateId
+          schema:
+            type: string
+          description: Фильтр по ID кандидата
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список собеседований
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Interview'
+                  total:
+                    type: integer
+
+  /interviews/{id}:
+    get:
+      operationId: getInterview
+      tags:
+        - Interviews
+      summary: Получить собеседование
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+
+  /interviews/{id}/start:
+    post:
+      operationId: startInterview
+      tags:
+        - Interviews
+      summary: Начать интервью
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: OK
+
+  /interviews/{id}/finish:
+    post:
+      operationId: finishInterview
+      tags:
+        - Interviews
+      summary: Завершить интервью
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+
+  /interviews/{id}/answer:
+    post:
+      operationId: submitInterviewAnswer
+      tags:
+        - Interviews
+      summary: Отправить ответ на вопрос
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewAnswerCreateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+
+  /branding:
+    get:
+      operationId: getBranding
+      tags:
+        - Settings
+      summary: Получить настройки брендинга
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branding'
+    put:
+      operationId: updateBranding
+      tags:
+        - Settings
+      summary: Обновить настройки брендинга
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BrandingUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Branding'
+
+  /users:
+    get:
+      operationId: listUsers
+      tags:
+        - Team & Users
+      summary: Список пользователей
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      operationId: createUser
+      tags:
+        - Team & Users
+      summary: Создать пользователя
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags:
+        - Team & Users
+      summary: Получить пользователя
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      operationId: updateUser
+      tags:
+        - Team & Users
+      summary: Обновить пользователя
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Пользователь обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      operationId: deleteUser
+      tags:
+        - Team & Users
+      summary: Удалить пользователя по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Пользователь успешно удален
+
+  /tariffs:
+    get:
+      operationId: listTariffs
+      tags:
+        - Settings
+      summary: Список тарифов
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tariff'
+    post:
+      operationId: createTariff
+      tags:
+        - Settings
+      summary: Создать тариф
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffCreateRequest'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+
+  /tariffs/{id}:
+    get:
+      operationId: getTariff
+      tags:
+        - Settings
+      summary: Получить тариф
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+    put:
+      operationId: updateTariff
+      tags:
+        - Settings
+      summary: Обновить тариф
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tariff'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+    delete:
+      operationId: deleteTariff
+      tags:
+        - Settings
+      summary: Удалить тариф по ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Тариф успешно удален
+
+  /reports:
+    get:
+      operationId: getReports
+      tags:
+        - Analytics & Reports
+      summary: Получить отчеты по собеседованиям
+      description: Генерирует и возвращает отчеты, сгруппированные по месяцам.
+      responses:
+        '200':
+          description: Успешный ответ с отчетами
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyReport'
+
+  /ai/transcribe:
+    post:
+      operationId: transcribeAudio
+      tags:
+        - AI
+      summary: Транскрибировать аудио файл
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Аудио файл для транскрибации
+      responses:
+        '200':
+          description: Аудио успешно транскрибировано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transcript:
+                    type: string
+                    description: Транскрибированный текст
+
+  /ai/transcribe-answer:
+    post:
+      operationId: transcribeInterviewAnswer
+      tags:
+        - AI
+      summary: Транскрибировать и отформатировать аудио ответ на интервью
+      description: |
+        Обрабатывает аудио файл через пайплайн:
+        1. Whisper - транскрибация в сырой текст
+        2. Claude - форматирование текста (без добавления контента)
+        3. Сохранение результата в базу данных
+        
+        Сохраняет как сырой, так и отформатированный текст.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audioFile
+                - interviewAnswerId
+              properties:
+                audioFile:
+                  type: string
+                  format: binary
+                  description: Аудио файл для транскрибации
+                interviewAnswerId:
+                  type: string
+                  format: uuid
+                  description: ID ответа на интервью для сохранения результата
+      responses:
+        '200':
+          description: Аудио успешно обработано
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  formattedText:
+                    type: string
+                    description: Отформатированный текст от Claude
+                    example: "Я работал в компании три года, занимался разработкой на Java."
+                  interviewAnswerId:
+                    type: string
+                    format: uuid
+                    description: ID ответа на интервью
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Audio file is empty"
+        '404':
+          description: Ответ на интервью не найден
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Interview answer not found"
+        '503':
+          description: Сервисы транскрибации недоступны
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Transcription services are not available"
+
+  /ai/generate-questions:
+    post:
+      operationId: generateQuestions
+      tags:
+        - AI
+      summary: Сгенерировать вопросы (заглушка)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                positionDescription:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+
+  /stats/positions:
+    get:
+      operationId: getPositionsStats
+      tags:
+        - Analytics & Reports
+      summary: Статистика по вакансиям
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PositionStats'
+
+  /stats/candidates:
+    get:
+      operationId: getCandidatesStats
+      tags:
+        - Analytics & Reports
+      summary: Статистика по кандидатам
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateStats'
+
+  /stats/interviews:
+    get:
+      operationId: getInterviewsStats
+      tags:
+        - Analytics & Reports
+      summary: Статистика по интервью
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewStats'
+
+  /archive:
+    get:
+      summary: Архив
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /learn:
+    get:
+      summary: Обучающие материалы
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    url:
+                      type: string
+                    description:
+                      type: string
+
+  /tariff/info:
+    get:
+      operationId: getTariffInfo
+      tags:
+        - Settings
+      summary: Информация о тарифе пользователя
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  interviewsLeft:
+                    type: integer
+                  until:
+                    type: string
+
+  /team:
+    get:
+      operationId: getTeam
+      tags:
+        - Team & Users
+      summary: Получить информацию о команде
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /checklist:
+    get:
+      operationId: getChecklist
+      tags:
+        - Interviews
+      summary: Чек-лист для интервью
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    text:
+                      type: string
+
+  /invite/info:
+    get:
+      operationId: getInviteInfo
+      tags:
+        - Interviews
+      summary: Информация для приглашения
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  language:
+                    type: string
+                  questionsCount:
+                    type: integer
+
+  /user/info:
+    get:
+      operationId: getUserInfo
+      tags:
+        - Account
+      summary: Получить дополнительную информацию о пользователе
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phone:
+                    type: string
+                  preferences:
+                    type: object
+
+components:
+  schemas:
+    # Базовые компоненты
+    BaseEntity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, createdAt]
+    
+    BasePositionFields:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/PositionStatusEnum'
+        topics:
+          type: array
+          items:
+            type: string
+          description: "Ключевые темы/теги позиции"
+        minScore:
+          type: number
+          format: float
+          description: "Минимальный проходной балл"
+        language:
+          type: string
+          description: "Язык собеседования"
+          example: "Русский"
+        showOtherLang:
+          type: boolean
+          description: "Показывать результаты на другом языке"
+        tags:
+          type: array
+          items:
+            type: string
+          description: "Теги для поиска"
+        answerTime:
+          type: integer
+          description: "Время на ответ в секундах"
+          example: 150
+        level:
+          $ref: '#/components/schemas/PositionLevelEnum'
+        saveAudio:
+          type: boolean
+          description: "Сохранять аудио"
+        saveVideo:
+          type: boolean
+          description: "Сохранять видео"
+        randomOrder:
+          type: boolean
+          description: "Случайный порядок вопросов"
+        questionType:
+          type: string
+          description: "Тип вопросов"
+          example: "В основном хард-скиллы"
+        questionsCount:
+          type: integer
+          description: "Количество вопросов"
+          example: 5
+        checkType:
+          type: string
+          description: "Тип проверки"
+    
+    BaseQuestionFields:
+      type: object
+      properties:
+        text:
+          type: string
+        type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        order:
+          type: integer
+        isRequired:
+          type: boolean
+        evaluationCriteria:
+          type: string
+          description: "Критерии оценки ответа"
+    
+    BaseCandidateFields:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          $ref: '#/components/schemas/CandidateStatusEnum'
+    
+    BaseUserFields:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: "Имя пользователя"
+        lastName:
+          type: string
+          description: "Фамилия пользователя"
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        avatarUrl:
+          type: string
+        language:
+          type: string
+        phone:
+          type: string
+    
+    # Основные схемы
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+    
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+    
+    User:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - $ref: '#/components/schemas/BaseUserFields'
+      required: [id, firstName, lastName, email, role, createdAt]
+    
+    UserCreateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: "Имя пользователя"
+        lastName:
+          type: string
+          description: "Фамилия пользователя"
+        email:
+          type: string
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        avatarUrl:
+          type: string
+        language:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+      required: [firstName, lastName, email, role, password]
+    
+    UserUpdateRequest:
+      $ref: '#/components/schemas/BaseUserFields'
+    
+    Position:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - $ref: '#/components/schemas/BasePositionFields'
+        - type: object
+          properties:
+            company:
+              type: string
+            publicLink:
+              type: string
+            stats:
+              $ref: '#/components/schemas/PositionStats'
+            team:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+            branding:
+              $ref: '#/components/schemas/Branding'
+            candidates:
+              type: array
+              items:
+                $ref: '#/components/schemas/Candidate'
+            avgScore:
+              type: number
+              format: float
+              description: "Средний балл по позиции"
+          required: [id, title, company, status, createdAt]
+    
+    PositionCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/PositionStatusEnum'
+        topics:
+          type: array
+          items:
+            type: string
+        minScore:
+          type: number
+          format: float
+        language:
+          type: string
+        showOtherLang:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        answerTime:
+          type: integer
+        level:
+          $ref: '#/components/schemas/PositionLevelEnum'
+        saveAudio:
+          type: boolean
+        saveVideo:
+          type: boolean
+        randomOrder:
+          type: boolean
+        questionType:
+          type: string
+        questionsCount:
+          type: integer
+        checkType:
+          type: string
+        team:
+          type: array
+          items:
+            type: string
+        brandingId:
+          type: string
+      required: [title, status]
+    
+    PositionUpdateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/PositionStatusEnum'
+        topics:
+          type: array
+          items:
+            type: string
+        minScore:
+          type: number
+          format: float
+        language:
+          type: string
+        showOtherLang:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+        answerTime:
+          type: integer
+        level:
+          $ref: '#/components/schemas/PositionLevelEnum'
+        saveAudio:
+          type: boolean
+        saveVideo:
+          type: boolean
+        randomOrder:
+          type: boolean
+        questionType:
+          type: string
+        questionsCount:
+          type: integer
+        checkType:
+          type: string
+        team:
+          type: array
+          items:
+            type: string
+        brandingId:
+          type: string
+    
+    PositionStats:
+      type: object
+      properties:
+        positionId:
+          type: string
+        interviewsTotal:
+          type: integer
+          description: "Всего собеседований"
+        interviewsSuccessful:
+          type: integer
+          description: "Успешно завершенные"
+        interviewsInProgress:
+          type: integer
+          description: "В процессе"
+        interviewsUnsuccessful:
+          type: integer
+          description: "Неуспешно завершенные"
+    
+    Question:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - $ref: '#/components/schemas/BaseQuestionFields'
+        - type: object
+          properties:
+            positionId:
+              type: string
+          required: [id, positionId, text, type, order, createdAt]
+    
+    QuestionCreateRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        type:
+          $ref: '#/components/schemas/QuestionTypeEnum'
+        order:
+          type: integer
+        isRequired:
+          type: boolean
+        evaluationCriteria:
+          type: string
+      required: [text, type, order]
+    
+    QuestionUpdateRequest:
+      $ref: '#/components/schemas/BaseQuestionFields'
+    
+    Candidate:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - $ref: '#/components/schemas/BaseCandidateFields'
+        - type: object
+          properties:
+            interview:
+              $ref: '#/components/schemas/Interview'
+            positionId:
+              type: string
+          required: [id, firstName, lastName, status, positionId, createdAt]
+    
+    CandidateCreateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+      required: [firstName, lastName]
+    
+    CandidateUpdateRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        status:
+          $ref: '#/components/schemas/CandidateStatusEnum'
+    
+    Interview:
+      type: object
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        positionId:
+          type: string
+        status:
+          $ref: '#/components/schemas/InterviewStatusEnum'
+        result:
+          $ref: '#/components/schemas/InterviewResultEnum'
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        transcript:
+          type: string
+        audioUrl:
+          type: string
+        videoUrl:
+          type: string
+          description: "Ссылка на видео запись"
+        aiScore:
+          type: number
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewAnswer'
+      required:
+        - id
+        - candidateId
+        - positionId
+        - status
+        - startedAt
+    
+    InterviewAnswer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        interviewId:
+          type: string
+        questionId:
+          type: string
+        answerText:
+          type: string
+        audioUrl:
+          type: string
+        transcript:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, interviewId, questionId]
+    
+    InterviewAnswerCreateRequest:
+      type: object
+      properties:
+        questionId:
+          type: string
+        answerText:
+          type: string
+        audioUrl:
+          type: string
+        transcript:
+          type: string
+      required: [questionId]
+    
+    Branding:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          properties:
+            companyName:
+              type: string
+            logoUrl:
+              type: string
+            primaryColor:
+              type: string
+            secondaryColor:
+              type: string
+            emailSignature:
+              type: string
+          required: [id, companyName, createdAt]
+    
+    BrandingUpdateRequest:
+      type: object
+      properties:
+        companyName:
+          type: string
+        logoUrl:
+          type: string
+        primaryColor:
+          type: string
+        secondaryColor:
+          type: string
+        emailSignature:
+          type: string
+    
+    Tariff:
+      allOf:
+        - $ref: '#/components/schemas/BaseEntity'
+        - type: object
+          properties:
+            name:
+              type: string
+            features:
+              type: array
+              items:
+                type: string
+            price:
+              type: number
+            isActive:
+              type: boolean
+          required: [id, name, price, createdAt]
+    
+    TariffCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        price:
+          type: number
+        isActive:
+          type: boolean
+      required: [name, price]
+    
+    TariffUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+        price:
+          type: number
+        isActive:
+          type: boolean
+    
+    # Enums
+    PositionStatusEnum:
+      type: string
+      enum:
+        - active
+        - paused
+        - archived
+    
+    CandidateStatusEnum:
+      type: string
+      enum:
+        - new
+        - in_progress
+        - finished
+        - rejected
+        - hired
+    
+    InterviewStatusEnum:
+      type: string
+      enum:
+        - not_started
+        - in_progress
+        - finished
+    
+    InterviewResultEnum:
+      type: string
+      enum:
+        - successful
+        - unsuccessful
+    
+    QuestionTypeEnum:
+      type: string
+      enum:
+        - text
+        - audio
+        - video
+        - choice
+    
+    PositionLevelEnum:
+      type: string
+      enum:
+        - junior
+        - middle
+        - senior
+        - lead
+      description: "Уровень позиции"
+    
+    RoleEnum:
+      type: string
+      enum:
+        - admin
+        - recruiter
+        - viewer
+    
+    # Stats
+    CandidateStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        inProgress:
+          type: integer
+        finished:
+          type: integer
+        hired:
+          type: integer
+    
+    InterviewStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        successful:
+          type: integer
+        unsuccessful:
+          type: integer
+    
+    MonthlyReport:
+      type: object
+      properties:
+        month:
+          type: string
+          example: "Июль 2024"
+        totalInterviews:
+          type: integer
+        successful:
+          type: integer
+        unsuccessful:
+          type: integer
+        avgScore:
+          type: number
+          format: float
+        dynamics:
+          type: integer
+          description: "Динамика в % по сравнению с прошлым месяцем"
+          example: 15
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+security:
+  - basicAuth: []
+
+x-readme:
+  explorer-enabled: true
+  proxy-enabled: true
+  samples-languages:
+    - curl
+    - node
+    - javascript
+    - python
+    - go
+    - java
+    - php 

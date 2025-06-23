@@ -1,0 +1,221 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.0'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.liquibase.gradle' version '2.2.1'
+    id 'org.openapi.generator' version '7.3.0'
+    id 'com.diffplug.spotless' version '6.25.0'
+    id 'org.sonarqube' version '4.4.1.3373'
+    id 'org.flywaydb.flyway' version '10.8.1'
+}
+
+group = 'azhukov'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_22
+    targetCompatibility = JavaVersion.VERSION_22
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs += ["$buildDir/generated-sources/openapi/src/main/java"]
+            exclude "**/ApiClient.java"
+            exclude "**/ApiException.java"
+            exclude "**/Configuration.java"
+            exclude "**/ApiResponse.java"
+        }
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:1.0.0"
+    }
+}
+
+dependencies {
+    // Spring Boot Starters
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    
+    // AI Integration - HTTP clients for AI providers
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    
+    // Database
+    implementation 'org.postgresql:postgresql'
+    implementation 'org.liquibase:liquibase-core'
+    implementation 'org.flywaydb:flyway-core'
+    
+    // Documentation
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.4.0'
+    
+    // Utilities
+    implementation 'org.apache.commons:commons-lang3:3.15.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'org.apache.commons:commons-text:1.11.0'
+    implementation 'com.google.guava:guava:33.2.0-jre'
+    
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+    
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.38'
+    annotationProcessor 'org.projectlombok:lombok:1.18.38'
+    testCompileOnly 'org.projectlombok:lombok:1.18.38'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
+    
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    testAnnotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    
+    // Testing
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.testcontainers:postgresql:1.19.3'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testImplementation 'com.h2database:h2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+// Spotless configuration for code formatting
+spotless {
+    java {
+        importOrder 'java', 'javax', 'org', 'com', 'azhukov'
+        removeUnusedImports()
+        googleJavaFormat('1.19.2')
+        
+        // Исключаем сгенерированные файлы
+        targetExclude("$buildDir/generated-sources/**")
+    }
+}
+
+// Настройка зависимостей для Spotless
+tasks.named('spotlessJava') {
+    dependsOn 'openApiGenerate'
+}
+
+// SonarQube configuration
+sonarqube {
+    properties {
+        property "sonar.projectKey", "hr-recruiter-back"
+        property "sonar.projectName", "HR Recruiter Backend"
+        property "sonar.host.url", "http://localhost:9000"
+        property "sonar.login", "admin"
+        property "sonar.password", "admin"
+    }
+}
+
+// OpenAPI Generator Configuration
+openApiGenerate {
+    generatorName = "spring"
+    inputSpec = "$projectDir/api/openapi.yaml"
+    outputDir = "$buildDir/generated-sources/openapi"
+    apiPackage = "azhukov.api"
+    modelPackage = "azhukov.model"
+    configOptions = [
+        interfaceOnly: "true",
+        useSpringBoot3: "true",
+        useTags: "true",
+        openApiNullable: "false",
+        useOptional: "false",
+        useJakartaEe: "true",
+        dateLibrary: "java8",
+        serializationLibrary: "jackson",
+        enumPropertyNaming: "MACRO_CASE",
+        removeEnumValuePrefix: "false",
+        hideGenerationTimestamp: "true",
+        generateApiTests: "false",
+        generateModelTests: "false",
+        generateApiDocumentation: "false",
+        generateModelDocumentation: "false",
+        generateApiUtil: "false",
+        useApiUtil: "false",
+        useBeanValidation: "true",
+        performBeanValidation: "true",
+        generateApi: "true",
+        generateModels: "true",
+        delegatePattern: "true",
+        useDefaultApiClient: "false",
+        useDefaultApiClientAsHttpClient: "false",
+        usePageable: "true",
+        usePrimitiveTypes: "true",
+        useOptional: "false"
+    ]
+    globalProperties = [
+        apis: "",
+        models: ""
+    ]
+}
+
+// Liquibase Configuration
+liquibase {
+    activities {
+        main {
+            changeLogFile 'src/main/resources/db/changelog/db.changelog-master.xml'
+            url 'jdbc:postgresql://localhost:5432/hr_recruiter'
+            username 'hr_user'
+            password 'hr_password'
+        }
+    }
+}
+
+// Ensure OpenAPI generation runs before compilation
+compileJava.dependsOn tasks.openApiGenerate
+
+// Настройка инкрементальной генерации OpenAPI
+tasks.named('openApiGenerate') {
+    // Проверяем изменения в исходном файле
+    inputs.file("$projectDir/api/openapi.yaml")
+    
+    // Проверяем изменения в конфигурации
+    inputs.property("configHash", project.findProperty("openApiConfigHash") ?: "default")
+    
+    // Выходные файлы для проверки изменений
+    outputs.dir("$buildDir/generated-sources/openapi")
+    
+    // Кэширование результатов
+    outputs.cacheIf { true }
+}
+
+// Configure annotation processor order
+tasks.withType(JavaCompile) {
+    options.compilerArgs += [
+        '-Amapstruct.defaultComponentModel=spring',
+        '-Amapstruct.unmappedTargetPolicy=IGNORE'
+    ]
+}
