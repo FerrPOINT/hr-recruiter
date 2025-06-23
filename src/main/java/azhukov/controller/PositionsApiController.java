@@ -41,7 +41,7 @@ public class PositionsApiController implements PositionsApi {
   }
 
   @Override
-  public ResponseEntity<Position> getPosition(String id) {
+  public ResponseEntity<Position> getPosition(Long id) {
     log.debug("Getting position by id: {}", id);
 
     Position position = positionService.getPositionById(id);
@@ -51,7 +51,7 @@ public class PositionsApiController implements PositionsApi {
 
   @Override
   public ResponseEntity<Position> updatePosition(
-      String id, PositionUpdateRequest positionUpdateRequest) {
+      Long id, PositionUpdateRequest positionUpdateRequest) {
     log.debug("Updating position with id: {}", id);
 
     Position updatedPosition = positionService.updatePosition(id, positionUpdateRequest);
@@ -61,7 +61,7 @@ public class PositionsApiController implements PositionsApi {
 
   @Override
   public ResponseEntity<Position> partialUpdatePosition(
-      String id, PartialUpdatePositionRequest partialUpdatePositionRequest) {
+      Long id, PartialUpdatePositionRequest partialUpdatePositionRequest) {
     log.debug("Partially updating position with id: {}", id);
 
     Position updatedPosition =
@@ -73,17 +73,15 @@ public class PositionsApiController implements PositionsApi {
   @Override
   public ResponseEntity<GetPositionPublicLink200Response> getPositionPublicLink(String id) {
     log.debug("Getting public link for position with id: {}", id);
-
-    String publicLink = positionService.getPositionPublicLink(id);
-
+    Long longId = Long.parseLong(id);
+    String publicLink = positionService.getPositionPublicLink(longId);
     GetPositionPublicLink200Response response = new GetPositionPublicLink200Response();
     response.setPublicLink(publicLink);
-
     return ResponseEntity.ok(response);
   }
 
   @Override
-  public ResponseEntity<PositionStats> getPositionStats(String id) {
+  public ResponseEntity<PositionStats> getPositionStats(Long id) {
     log.debug("Getting stats for position with id: {}", id);
 
     PositionStats stats = positionService.getPositionStats(id);
@@ -95,8 +93,8 @@ public class PositionsApiController implements PositionsApi {
   public ResponseEntity<ListPositions200Response> listPositions(
       Optional<PositionStatusEnum> status,
       Optional<String> search,
-      Optional<Integer> page,
-      Optional<Integer> size) {
+      Optional<Long> page,
+      Optional<Long> size) {
     log.debug(
         "Getting positions with status={}, search={}, page={}, size={}",
         status,
@@ -104,16 +102,16 @@ public class PositionsApiController implements PositionsApi {
         page,
         size);
 
-    int pageNum = page.orElse(1);
-    int pageSize = size.orElse(20);
-    Pageable pageable = PageRequest.of(pageNum - 1, pageSize);
+    long pageNum = page.orElse(1L);
+    long pageSize = size.orElse(20L);
+    Pageable pageable = PageRequest.of((int) (pageNum - 1), (int) pageSize);
 
     Page<Position> positions =
         positionService.getPositionsPage(status.orElse(null), search.orElse(null), pageable);
 
     ListPositions200Response response = new ListPositions200Response();
     response.setItems(positions.getContent());
-    response.setTotal((int) positions.getTotalElements());
+    response.setTotal((long) positions.getTotalElements());
 
     return ResponseEntity.ok(response);
   }

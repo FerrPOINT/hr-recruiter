@@ -28,7 +28,7 @@ public class InterviewsApiController implements InterviewsApi {
   private final InterviewMapper interviewMapper;
 
   @Override
-  public ResponseEntity<azhukov.model.Interview> createInterviewFromCandidate(String candidateId) {
+  public ResponseEntity<azhukov.model.Interview> createInterviewFromCandidate(Long candidateId) {
     log.info("Creating interview for candidate: {}", candidateId);
 
     try {
@@ -42,7 +42,7 @@ public class InterviewsApiController implements InterviewsApi {
   }
 
   @Override
-  public ResponseEntity<azhukov.model.Interview> finishInterview(String id) {
+  public ResponseEntity<azhukov.model.Interview> finishInterview(Long id) {
     log.info("Finishing interview: {}", id);
 
     try {
@@ -72,7 +72,7 @@ public class InterviewsApiController implements InterviewsApi {
   }
 
   @Override
-  public ResponseEntity<azhukov.model.Interview> getInterview(String id) {
+  public ResponseEntity<azhukov.model.Interview> getInterview(Long id) {
     log.info("Getting interview: {}", id);
 
     try {
@@ -91,26 +91,28 @@ public class InterviewsApiController implements InterviewsApi {
 
     // Заглушка для информации о приглашении
     GetInviteInfo200Response inviteInfo =
-        new GetInviteInfo200Response().language("Русский").questionsCount(5);
+        new GetInviteInfo200Response().language("Русский").questionsCount((long) 5);
 
     return ResponseEntity.ok(inviteInfo);
   }
 
   @Override
   public ResponseEntity<ListInterviews200Response> listInterviews(
-      Optional<String> positionId,
-      Optional<String> candidateId,
-      Optional<Integer> page,
-      Optional<Integer> size) {
+      Optional<Long> positionId,
+      Optional<Long> candidateId,
+      Optional<Long> page,
+      Optional<Long> size) {
     log.info(
         "Listing interviews with positionId: {}, candidateId: {}, page: {}, size: {}",
         positionId.orElse(null),
         candidateId.orElse(null),
-        page.orElse(1),
-        size.orElse(20));
+        page.orElse(1L),
+        size.orElse(20L));
 
     try {
-      PageRequest pageRequest = PageRequest.of(page.orElse(1) - 1, size.orElse(20));
+      int pageNum = page.orElse(1L).intValue();
+      int pageSize = size.orElse(20L).intValue();
+      PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize);
       Page<Interview> interviewsPage =
           interviewService.listInterviews(
               positionId.orElse(null), candidateId.orElse(null), pageRequest);
@@ -121,7 +123,7 @@ public class InterviewsApiController implements InterviewsApi {
       ListInterviews200Response response =
           new ListInterviews200Response()
               .items(interviewDtos)
-              .total((int) interviewsPage.getTotalElements());
+              .total((long) interviewsPage.getTotalElements());
 
       return ResponseEntity.ok(response);
     } catch (Exception e) {
@@ -131,7 +133,7 @@ public class InterviewsApiController implements InterviewsApi {
   }
 
   @Override
-  public ResponseEntity<List<azhukov.model.Interview>> listPositionInterviews(String positionId) {
+  public ResponseEntity<List<azhukov.model.Interview>> listPositionInterviews(Long positionId) {
     log.info("Listing interviews for position: {}", positionId);
 
     try {
@@ -145,9 +147,8 @@ public class InterviewsApiController implements InterviewsApi {
   }
 
   @Override
-  public ResponseEntity<Void> startInterview(String id) {
+  public ResponseEntity<Void> startInterview(Long id) {
     log.info("Starting interview: {}", id);
-
     try {
       interviewService.startInterview(id);
       return ResponseEntity.noContent().build();
@@ -159,21 +160,20 @@ public class InterviewsApiController implements InterviewsApi {
 
   @Override
   public ResponseEntity<azhukov.model.Interview> submitInterviewAnswer(
-      String id, InterviewAnswerCreateRequest interviewAnswerCreateRequest) {
+      Long id, InterviewAnswerCreateRequest interviewAnswerCreateRequest) {
     log.info(
         "Submitting answer for interview: {} question: {}",
         id,
         interviewAnswerCreateRequest.getQuestionId());
-
     try {
+      Long questionId = interviewAnswerCreateRequest.getQuestionId();
       Interview interview =
           interviewService.submitInterviewAnswer(
               id,
-              interviewAnswerCreateRequest.getQuestionId(),
+              questionId,
               interviewAnswerCreateRequest.getAnswerText(),
               interviewAnswerCreateRequest.getAudioUrl(),
               interviewAnswerCreateRequest.getTranscript());
-
       azhukov.model.Interview interviewDto = interviewMapper.toDto(interview);
       return ResponseEntity.ok(interviewDto);
     } catch (Exception e) {

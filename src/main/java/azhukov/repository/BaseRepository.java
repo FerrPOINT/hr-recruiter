@@ -14,23 +14,24 @@ import org.springframework.data.repository.NoRepositoryBean;
  * динамических запросов.
  *
  * @param <T> Тип сущности
- * @param <ID> Тип ID сущности
+ * @param <R> Тип ID сущности
  */
 @NoRepositoryBean
-public interface BaseRepository<T, ID> extends JpaRepository<T, ID>, JpaSpecificationExecutor<T> {
+public interface BaseRepository<T, R extends java.io.Serializable>
+    extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
 
   /** Находит сущность по ID с проверкой на null */
-  default T findByIdOrThrow(ID id) {
+  default T findByIdOrThrow(Long id) {
     return findById(id).orElseThrow(() -> new RuntimeException("Entity not found with id: " + id));
   }
 
   /** Находит сущность по ID с проверкой на null (возвращает Optional) */
-  default Optional<T> findByIdOptional(ID id) {
+  default Optional<T> findByIdOptional(Long id) {
     return findById(id);
   }
 
   /** Проверяет существование сущности по ID */
-  default boolean existsById(ID id) {
+  default boolean existsById(Long id) {
     return findById(id).isPresent();
   }
 
@@ -63,13 +64,13 @@ public interface BaseRepository<T, ID> extends JpaRepository<T, ID>, JpaSpecific
   }
 
   /** Мягкое удаление (если поддерживается) */
-  default void softDelete(ID id) {
+  default void softDelete(Long id) {
     // Переопределяется в конкретных репозиториях
     deleteById(id);
   }
 
   /** Восстановление мягко удаленной сущности (если поддерживается) */
-  default void restore(ID id) {
+  default void restore(Long id) {
     // Переопределяется в конкретных репозиториях
     throw new UnsupportedOperationException("Restore not supported for this entity");
   }

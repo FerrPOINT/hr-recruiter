@@ -16,9 +16,7 @@ import org.mapstruct.ReportingPolicy;
  * Маппер для преобразования между сущностью Interview и DTO. Использует MapStruct для
  * автоматической генерации кода.
  */
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface InterviewMapper extends CommonMapper {
 
   /** Преобразует сущность Interview в DTO */

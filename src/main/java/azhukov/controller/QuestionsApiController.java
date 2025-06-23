@@ -1,7 +1,6 @@
 package azhukov.controller;
 
 import azhukov.api.QuestionsApi;
-import azhukov.mapper.QuestionMapper;
 import azhukov.model.BaseQuestionFields;
 import azhukov.model.GetAllQuestions200Response;
 import azhukov.model.Question;
@@ -31,63 +30,63 @@ public class QuestionsApiController implements QuestionsApi {
 
   @Override
   public ResponseEntity<GetAllQuestions200Response> getAllQuestions(
-      Optional<Integer> page, 
-      Optional<Integer> size, 
-      Optional<String> sort) {
-    
+      Optional<Long> page, Optional<Long> size, Optional<String> sort) {
+
     log.debug("Получение списка всех вопросов: page={}, size={}, sort={}", page, size, sort);
-    
+
     // Используем утилитный метод для создания Pageable
-    Pageable pageable = PageableUtils.fromOptionals(page, size, sort);
+    Pageable pageable =
+        PageableUtils.fromOptionals(page.map(Long::intValue), size.map(Long::intValue), sort);
     Page<Question> questionPage = questionService.getAllQuestions(pageable);
-    
+
     // Преобразуем Page<Question> в GetAllQuestions200Response
     GetAllQuestions200Response response = new GetAllQuestions200Response();
     response.setContent(questionPage.getContent());
-    response.setTotalElements((int) questionPage.getTotalElements());
-    response.setTotalPages(questionPage.getTotalPages());
-    response.setSize(questionPage.getSize());
-    response.setNumber(questionPage.getNumber());
-    
+    response.setTotalElements((long) questionPage.getTotalElements());
+    response.setTotalPages((long) questionPage.getTotalPages());
+    response.setSize((long) questionPage.getSize());
+    response.setNumber((long) questionPage.getNumber());
+
     return ResponseEntity.ok(response);
   }
 
   @Override
-  public ResponseEntity<Question> getQuestion(String id) {
+  public ResponseEntity<Question> getQuestion(Long id) {
     log.debug("Получение вопроса по ID: {}", id);
-    
+
     Question question = questionService.getQuestionById(id);
     return ResponseEntity.ok(question);
   }
 
   @Override
-  public ResponseEntity<List<Question>> listPositionQuestions(String positionId) {
+  public ResponseEntity<List<Question>> listPositionQuestions(Long positionId) {
     log.debug("Получение списка вопросов для вакансии: {}", positionId);
-    
+
     List<Question> questions = questionService.getQuestionsByPosition(positionId);
     return ResponseEntity.ok(questions);
   }
 
   @Override
-  public ResponseEntity<Question> createPositionQuestion(String positionId, QuestionCreateRequest request) {
+  public ResponseEntity<Question> createPositionQuestion(
+      Long positionId, QuestionCreateRequest request) {
     log.debug("Создание вопроса для вакансии {}: {}", positionId, request);
-    
+
     Question question = questionService.createQuestion(positionId, request);
     return ResponseEntity.status(HttpStatus.CREATED).body(question);
   }
 
   @Override
-  public ResponseEntity<Question> updateQuestion(String id, BaseQuestionFields body) {
+  public ResponseEntity<Question> updateQuestion(Long id, BaseQuestionFields body) {
     log.debug("Обновление вопроса {}: {}", id, body);
-    
+
     Question question = questionService.updateQuestion(id, body);
     return ResponseEntity.ok(question);
   }
 
   @Override
-  public ResponseEntity<Void> deleteQuestion(String id) {
+  public ResponseEntity<Void> deleteQuestion(Long id) {
     log.debug("Удаление вопроса: {}", id);
-    
+
     questionService.deleteQuestion(id);
     return ResponseEntity.noContent().build();
   }

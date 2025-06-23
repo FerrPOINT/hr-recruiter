@@ -1,0 +1,12 @@
+spring:
+  liquibase:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  ai:
+    transcription:
+      whisper:
+        url: http://localhost:12345/mock-whisper 

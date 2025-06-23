@@ -59,7 +59,7 @@ public class UsersApiController implements TeamUsersApi {
   }
 
   @Override
-  public ResponseEntity<User> getUser(String id) {
+  public ResponseEntity<User> getUser(Long id) {
     log.info("Getting user with id: {}", id);
     try {
       User user = userService.getUserById(id);
@@ -71,14 +71,14 @@ public class UsersApiController implements TeamUsersApi {
   }
 
   @Override
-  public ResponseEntity<User> updateUser(String id, BaseUserFields userUpdateRequest) {
+  public ResponseEntity<User> updateUser(Long id, BaseUserFields userUpdateRequest) {
     log.info("Updating user with id: {}", id);
     User updatedUser = userService.updateUser(id, userUpdateRequest);
     return ResponseEntity.ok(updatedUser);
   }
 
   @Override
-  public ResponseEntity<Void> deleteUser(String id) {
+  public ResponseEntity<Void> deleteUser(Long id) {
     log.info("Deleting user with id: {}", id);
     userService.deleteUser(id);
     return ResponseEntity.noContent().build();
@@ -200,7 +200,7 @@ public class UsersApiController implements TeamUsersApi {
       })
   @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<User> toggleUserStatus(
-      @Parameter(description = "ID пользователя") @PathVariable String id) {
+      @Parameter(description = "ID пользователя") @PathVariable Long id) {
 
     log.debug("Toggling status for user with ID: {}", id);
 

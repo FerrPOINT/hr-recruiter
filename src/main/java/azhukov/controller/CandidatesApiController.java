@@ -25,28 +25,28 @@ public class CandidatesApiController implements CandidatesApi {
 
   @Override
   public ResponseEntity<Candidate> createPositionCandidate(
-      String positionId, CandidateCreateRequest candidateCreateRequest) {
+      Long positionId, CandidateCreateRequest candidateCreateRequest) {
     log.info("Creating candidate for position: {}", positionId);
     Candidate candidate = candidateService.createCandidate(positionId, candidateCreateRequest);
     return ResponseEntity.status(HttpStatus.CREATED).body(candidate);
   }
 
   @Override
-  public ResponseEntity<Void> deleteCandidate(String id) {
+  public ResponseEntity<Void> deleteCandidate(Long id) {
     log.info("Deleting candidate: {}", id);
     candidateService.deleteCandidate(id);
     return ResponseEntity.noContent().build();
   }
 
   @Override
-  public ResponseEntity<Candidate> getCandidate(String id) {
+  public ResponseEntity<Candidate> getCandidate(Long id) {
     log.info("Getting candidate: {}", id);
     Candidate candidate = candidateService.getCandidateById(id);
     return ResponseEntity.ok(candidate);
   }
 
   @Override
-  public ResponseEntity<List<Candidate>> listPositionCandidates(String positionId) {
+  public ResponseEntity<List<Candidate>> listPositionCandidates(Long positionId) {
     log.info("Getting candidates for position: {}", positionId);
     List<Candidate> candidates = candidateService.getCandidatesByPosition(positionId);
     return ResponseEntity.ok(candidates);
@@ -54,7 +54,7 @@ public class CandidatesApiController implements CandidatesApi {
 
   @Override
   public ResponseEntity<Candidate> updateCandidate(
-      String id, CandidateUpdateRequest candidateUpdateRequest) {
+      Long id, CandidateUpdateRequest candidateUpdateRequest) {
     log.info("Updating candidate: {}", id);
     Candidate candidate = candidateService.updateCandidate(id, candidateUpdateRequest);
     return ResponseEntity.ok(candidate);

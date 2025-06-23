@@ -18,7 +18,8 @@ import org.hibernate.annotations.UpdateTimestamp;
     indexes = {
       @Index(name = "idx_candidates_position_id", columnList = "position_id"),
       @Index(name = "idx_candidates_status", columnList = "status"),
-      @Index(name = "idx_candidates_email", columnList = "email"),
+      @Index(name = "idx_candidates_email", columnList = "email", unique = true),
+      @Index(name = "idx_candidates_phone", columnList = "phone", unique = true),
       @Index(name = "idx_candidates_created_at", columnList = "created_at")
     })
 @Data
@@ -30,8 +31,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Candidate {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @NotBlank(message = "Имя кандидата обязательно")
   @Column(name = "first_name", nullable = false, length = 100)

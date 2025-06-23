@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
  * Репозиторий для работы с кандидатами. Расширяет BaseRepository для автоматизации общих операций.
  */
 @Repository
-public interface CandidateRepository extends BaseRepository<Candidate, String> {
+public interface CandidateRepository extends BaseRepository<Candidate, Long> {
 
   /** Находит кандидатов по вакансии */
   List<Candidate> findByPosition(Position position);
@@ -93,17 +93,17 @@ public interface CandidateRepository extends BaseRepository<Candidate, String> {
 
   /** Находит кандидатов по ID вакансии */
   @Query("SELECT c FROM Candidate c WHERE c.position.id = :positionId")
-  List<Candidate> findByPositionId(@Param("positionId") String positionId);
+  List<Candidate> findByPositionId(@Param("positionId") Long positionId);
 
   /** Находит кандидатов по ID вакансии с пагинацией */
   @Query("SELECT c FROM Candidate c WHERE c.position.id = :positionId")
-  Page<Candidate> findByPositionId(@Param("positionId") String positionId, Pageable pageable);
+  Page<Candidate> findByPositionId(@Param("positionId") Long positionId, Pageable pageable);
 
   /** Мягкое удаление кандидата (устанавливает статус REJECTED) */
   @Query("UPDATE Candidate c SET c.status = 'REJECTED' WHERE c.id = :id")
-  void softDelete(@Param("id") String id);
+  void softDelete(@Param("id") Long id);
 
   /** Восстановление кандидата (устанавливает статус NEW) */
   @Query("UPDATE Candidate c SET c.status = 'NEW' WHERE c.id = :id")
-  void restore(@Param("id") String id);
+  void restore(@Param("id") Long id);
 }

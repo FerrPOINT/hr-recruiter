@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @Transactional
-public class QuestionService extends BaseService<Question, String, QuestionRepository> {
+public class QuestionService extends BaseService<Question, Long, QuestionRepository> {
 
   private final QuestionMapper questionMapper;
   private final PositionRepository positionRepository;
@@ -43,7 +43,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
   /** Создает новый вопрос для вакансии */
   @Transactional
   public azhukov.model.Question createQuestion(
-      String positionId, azhukov.model.QuestionCreateRequest request) {
+      Long positionId, azhukov.model.QuestionCreateRequest request) {
     log.debug("Creating question for position: {}", positionId);
 
     Position position =
@@ -60,8 +60,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
 
   /** Обновляет вопрос */
   @Transactional
-  public azhukov.model.Question updateQuestion(
-      String id, azhukov.model.BaseQuestionFields request) {
+  public azhukov.model.Question updateQuestion(Long id, azhukov.model.BaseQuestionFields request) {
     log.debug("Updating question: {}", id);
 
     Question entity = findByIdOrThrow(id);
@@ -74,7 +73,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
       entity.setType(questionMapper.mapType(request.getType()));
     }
     if (request.getOrder() != null) {
-      entity.setOrder(request.getOrder());
+      entity.setOrder(request.getOrder().intValue());
     }
     if (request.getIsRequired() != null) {
       entity.setRequired(request.getIsRequired());
@@ -86,7 +85,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
 
   /** Получает вопросы по вакансии */
   @Transactional(readOnly = true)
-  public List<azhukov.model.Question> getQuestionsByPosition(String positionId) {
+  public List<azhukov.model.Question> getQuestionsByPosition(Long positionId) {
     log.debug("Getting questions for position: {}", positionId);
     List<Question> questions = repository.findByPositionId(positionId);
     return questionMapper.toDtoList(questions);
@@ -94,7 +93,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
 
   /** Получает вопросы по вакансии, отсортированные по порядку */
   @Transactional(readOnly = true)
-  public List<azhukov.model.Question> getQuestionsByPositionOrdered(String positionId) {
+  public List<azhukov.model.Question> getQuestionsByPositionOrdered(Long positionId) {
     log.debug("Getting ordered questions for position: {}", positionId);
     List<Question> questions = repository.findByPositionIdOrderByOrderAsc(positionId);
     return questionMapper.toDtoList(questions);
@@ -102,7 +101,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
 
   /** Получает вопрос по ID */
   @Transactional(readOnly = true)
-  public azhukov.model.Question getQuestionById(String id) {
+  public azhukov.model.Question getQuestionById(Long id) {
     log.debug("Getting question by id: {}", id);
     Question question = findByIdOrThrow(id);
     return questionMapper.toDto(question);
@@ -110,7 +109,7 @@ public class QuestionService extends BaseService<Question, String, QuestionRepos
 
   /** Удаляет вопрос */
   @Transactional
-  public void deleteQuestion(String id) {
+  public void deleteQuestion(Long id) {
     log.debug("Deleting question: {}", id);
     Question question = findByIdOrThrow(id);
     repository.delete(question);

@@ -34,7 +34,7 @@ public class CandidateService {
 
   /** Получает кандидатов по вакансии */
   @Transactional(readOnly = true)
-  public List<azhukov.model.Candidate> getCandidatesByPosition(String positionId) {
+  public List<azhukov.model.Candidate> getCandidatesByPosition(Long positionId) {
     log.debug("Getting candidates for position: {}", positionId);
     List<Candidate> candidates = candidateRepository.findByPositionId(positionId);
     return candidateMapper.toDtoList(candidates);
@@ -43,7 +43,7 @@ public class CandidateService {
   /** Создает нового кандидата для вакансии */
   @Transactional
   public azhukov.model.Candidate createCandidate(
-      String positionId, azhukov.model.CandidateCreateRequest request) {
+      Long positionId, azhukov.model.CandidateCreateRequest request) {
     log.debug("Creating candidate for position: {}", positionId);
 
     Position position =
@@ -60,7 +60,7 @@ public class CandidateService {
 
   /** Получает кандидата по ID */
   @Transactional(readOnly = true)
-  public azhukov.model.Candidate getCandidateById(String id) {
+  public azhukov.model.Candidate getCandidateById(Long id) {
     log.debug("Getting candidate by id: {}", id);
     Candidate entity =
         candidateRepository
@@ -72,7 +72,7 @@ public class CandidateService {
   /** Обновляет кандидата */
   @Transactional
   public azhukov.model.Candidate updateCandidate(
-      String id, azhukov.model.CandidateUpdateRequest request) {
+      Long id, azhukov.model.CandidateUpdateRequest request) {
     log.debug("Updating candidate with id: {}", id);
 
     Candidate entity =
@@ -88,12 +88,8 @@ public class CandidateService {
 
   /** Удаляет кандидата */
   @Transactional
-  public void deleteCandidate(String id) {
-    log.debug("Deleting candidate with id: {}", id);
-    Candidate entity =
-        candidateRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found: " + id));
-    candidateRepository.delete(entity);
+  public void deleteCandidate(Long id) {
+    log.debug("Deleting candidate: {}", id);
+    candidateRepository.deleteById(id);
   }
 }

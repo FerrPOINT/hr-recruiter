@@ -5,7 +5,6 @@ import azhukov.entity.Interview;
 import azhukov.entity.Position;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Repository;
  * операций.
  */
 @Repository
-public interface InterviewRepository extends BaseRepository<Interview, String> {
+public interface InterviewRepository extends BaseRepository<Interview, Long> {
 
   /** Находит собеседования по кандидату */
   List<Interview> findByCandidate(Candidate candidate);
@@ -101,19 +100,19 @@ public interface InterviewRepository extends BaseRepository<Interview, String> {
 
   /** Находит собеседования по ID кандидата */
   @Query("SELECT i FROM Interview i WHERE i.candidate.id = :candidateId")
-  List<Interview> findByCandidateId(@Param("candidateId") String candidateId);
+  List<Interview> findByCandidateId(@Param("candidateId") Long candidateId);
 
   /** Находит собеседования по ID кандидата с пагинацией */
   @Query("SELECT i FROM Interview i WHERE i.candidate.id = :candidateId")
-  Page<Interview> findByCandidateId(@Param("candidateId") String candidateId, Pageable pageable);
+  Page<Interview> findByCandidateId(@Param("candidateId") Long candidateId, Pageable pageable);
 
   /** Находит собеседования по ID вакансии */
   @Query("SELECT i FROM Interview i WHERE i.position.id = :positionId")
-  List<Interview> findByPositionId(@Param("positionId") UUID positionId);
+  List<Interview> findByPositionId(@Param("positionId") Long positionId);
 
   /** Находит собеседования по ID вакансии с пагинацией */
   @Query("SELECT i FROM Interview i WHERE i.position.id = :positionId")
-  Page<Interview> findByPositionId(@Param("positionId") UUID positionId, Pageable pageable);
+  Page<Interview> findByPositionId(@Param("positionId") Long positionId, Pageable pageable);
 
   /** Подсчитывает количество собеседований по статусу */
   long countByStatus(Interview.Status status);
@@ -146,9 +145,9 @@ public interface InterviewRepository extends BaseRepository<Interview, String> {
 
   /** Мягкое удаление собеседования (устанавливает статус FINISHED и результат UNSUCCESSFUL) */
   @Query("UPDATE Interview i SET i.status = 'FINISHED', i.result = 'UNSUCCESSFUL' WHERE i.id = :id")
-  void softDelete(@Param("id") String id);
+  void softDelete(@Param("id") Long id);
 
   /** Восстановление собеседования (устанавливает статус NOT_STARTED и убирает результат) */
   @Query("UPDATE Interview i SET i.status = 'NOT_STARTED', i.result = NULL WHERE i.id = :id")
-  void restore(@Param("id") String id);
+  void restore(@Param("id") Long id);
 }

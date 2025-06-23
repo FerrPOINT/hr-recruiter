@@ -34,7 +34,7 @@ public class WhisperService {
   /**
    * Транскрибирует аудио файл в текст
    *
-   * @param audioFile аудио файл для транскрипции
+   * @param audioFile аудио файл для транскрибации
    * @return транскрибированный текст
    */
   public String transcribeAudio(MultipartFile audioFile) {

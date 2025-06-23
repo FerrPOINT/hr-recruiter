@@ -15,9 +15,7 @@ import org.mapstruct.*;
  * Маппер для преобразования между сущностями и DTO вакансий. Использует MapStruct для
  * автоматической генерации кода маппинга.
  */
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface PositionMapper extends CommonMapper {
 
   /** Преобразует Position entity в Position DTO */
@@ -113,8 +111,8 @@ public interface PositionMapper extends CommonMapper {
                 .map(
                     user ->
                         Map.of(
-                            "id", user.getId(), 
-                            "name", user.getFirstName() + " " + user.getLastName(), 
+                            "id", user.getId(),
+                            "name", user.getFirstName() + " " + user.getLastName(),
                             "email", user.getEmail()))
                 .collect(Collectors.toList())
             : null);

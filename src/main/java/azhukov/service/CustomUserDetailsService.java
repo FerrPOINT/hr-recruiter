@@ -43,7 +43,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   }
 
   /** Загружает пользователя по ID */
-  public UserDetails loadUserById(String id) throws UsernameNotFoundException {
+  public UserDetails loadUserById(Long id) throws UsernameNotFoundException {
     log.debug("Loading user by ID: {}", id);
 
     UserEntity user =

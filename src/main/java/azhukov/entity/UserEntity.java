@@ -20,7 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
     name = "users",
     indexes = {
       @Index(name = "idx_users_email", columnList = "email", unique = true),
-      @Index(name = "idx_users_role", columnList = "role")
+      @Index(name = "idx_users_role", columnList = "role"),
+      @Index(name = "idx_users_phone", columnList = "phone", unique = true)
     })
 @Data
 @NoArgsConstructor
@@ -31,8 +32,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class UserEntity implements UserDetails {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @NotBlank(message = "Имя обязательно")
   @Column(nullable = false, length = 100)
@@ -74,6 +75,9 @@ public class UserEntity implements UserDetails {
   @UpdateTimestamp
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
+
+  @Column(length = 20, unique = true)
+  private String phone;
 
   // Spring Security UserDetails implementation
   @Override

@@ -13,6 +13,9 @@ COPY gradle gradle
 COPY build.gradle .
 COPY settings.gradle .
 
+# Копируем спецификацию OpenAPI
+COPY api api
+
 # Делаем gradlew исполняемым
 RUN chmod +x gradlew
 
@@ -21,6 +24,12 @@ RUN ./gradlew dependencies --no-daemon
 
 # Копируем исходный код
 COPY src src
+
+# Генерация исходников OpenAPI
+RUN ./gradlew openApiGenerate --no-daemon
+
+# Форматирование исходников и сгенерированных файлов (Spotless)
+RUN ./gradlew spotlessApply --no-daemon
 
 # Собираем приложение
 RUN ./gradlew build --no-daemon -x test

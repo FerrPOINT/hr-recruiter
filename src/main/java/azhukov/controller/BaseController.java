@@ -16,11 +16,10 @@ import org.springframework.web.bind.annotation.*;
  * операции и обработку ошибок.
  *
  * @param <T> Тип сущности
- * @param <ID> Тип ID сущности
  * @param <S> Тип сервиса
  */
 @Slf4j
-public abstract class BaseController<T, ID, S extends BaseService<T, ID, ?>> {
+public abstract class BaseController<T, S extends BaseService<T, Long, ?>> {
 
   protected final S service;
 
@@ -30,7 +29,7 @@ public abstract class BaseController<T, ID, S extends BaseService<T, ID, ?>> {
 
   /** Получает сущность по ID */
   @GetMapping("/{id}")
-  public ResponseEntity<T> getById(@PathVariable ID id) {
+  public ResponseEntity<T> getById(@PathVariable Long id) {
     log.debug("Getting entity by id: {}", id);
     try {
       T entity = service.findByIdOrThrow(id);
@@ -88,7 +87,7 @@ public abstract class BaseController<T, ID, S extends BaseService<T, ID, ?>> {
 
   /** Обновляет сущность по ID */
   @PutMapping("/{id}")
-  public ResponseEntity<T> update(@PathVariable ID id, @RequestBody T entity) {
+  public ResponseEntity<T> update(@PathVariable Long id, @RequestBody T entity) {
     log.debug("Updating entity with id: {}", id);
     try {
       T updatedEntity = service.update(id, entity);
@@ -107,7 +106,7 @@ public abstract class BaseController<T, ID, S extends BaseService<T, ID, ?>> {
 
   /** Удаляет сущность по ID */
   @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable ID id) {
+  public ResponseEntity<Void> delete(@PathVariable Long id) {
     log.debug("Deleting entity with id: {}", id);
     try {
       service.deleteById(id);
@@ -121,41 +120,9 @@ public abstract class BaseController<T, ID, S extends BaseService<T, ID, ?>> {
     }
   }
 
-  /** Мягкое удаление сущности по ID */
-  @DeleteMapping("/{id}/soft")
-  public ResponseEntity<Void> softDelete(@PathVariable ID id) {
-    log.debug("Soft deleting entity with id: {}", id);
-    try {
-      service.softDelete(id);
-      return ResponseEntity.noContent().build();
-    } catch (ResourceNotFoundException e) {
-      log.warn("Entity not found for soft deletion with id: {}", id);
-      return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-      log.error("Error soft deleting entity with id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Восстанавливает мягко удаленную сущность по ID */
-  @PostMapping("/{id}/restore")
-  public ResponseEntity<Void> restore(@PathVariable ID id) {
-    log.debug("Restoring entity with id: {}", id);
-    try {
-      service.restore(id);
-      return ResponseEntity.ok().build();
-    } catch (ResourceNotFoundException e) {
-      log.warn("Entity not found for restoration with id: {}", id);
-      return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-      log.error("Error restoring entity with id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
   /** Проверяет существование сущности по ID */
   @GetMapping("/{id}/exists")
-  public ResponseEntity<Boolean> exists(@PathVariable ID id) {
+  public ResponseEntity<Boolean> exists(@PathVariable Long id) {
     log.debug("Checking existence of entity with id: {}", id);
     try {
       boolean exists = service.existsById(id);

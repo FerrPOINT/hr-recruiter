@@ -12,9 +12,7 @@ import org.mapstruct.*;
  * Маппер для преобразования между Candidate entity и DTO. Использует MapStruct для автоматической
  * генерации кода маппинга.
  */
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface CandidateMapper extends CommonMapper {
 
   /** Преобразует Candidate entity в Candidate DTO. */

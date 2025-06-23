@@ -6,7 +6,6 @@ plugins {
     id 'org.openapi.generator' version '7.3.0'
     id 'com.diffplug.spotless' version '6.25.0'
     id 'org.sonarqube' version '4.4.1.3373'
-    id 'org.flywaydb.flyway' version '10.8.1'
 }
 
 group = 'azhukov'
@@ -66,7 +65,6 @@ dependencies {
     // Database
     implementation 'org.postgresql:postgresql'
     implementation 'org.liquibase:liquibase-core'
-    implementation 'org.flywaydb:flyway-core'
     
     // Documentation
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.4.0'
@@ -118,9 +116,7 @@ spotless {
         importOrder 'java', 'javax', 'org', 'com', 'azhukov'
         removeUnusedImports()
         googleJavaFormat('1.19.2')
-        
-        // Исключаем сгенерированные файлы
-        targetExclude("$buildDir/generated-sources/**")
+        targetExclude 'build/generated-sources/openapi/**', 'build/generated/**', 'build/generated*/*', 'build/generated*'
     }
 }
 
@@ -175,6 +171,13 @@ openApiGenerate {
         usePageable: "true",
         usePrimitiveTypes: "true",
         useOptional: "false"
+    ]
+    typeMappings = [
+        "integer": "Long",
+        "int64": "Long"
+    ]
+    importMappings = [
+        "Long": "java.lang.Long"
     ]
     globalProperties = [
         apis: "",

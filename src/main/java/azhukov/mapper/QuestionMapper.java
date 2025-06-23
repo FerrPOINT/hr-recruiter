@@ -13,9 +13,7 @@ import org.springframework.data.domain.Page;
  * Маппер для преобразования между Question entity и DTO. Использует MapStruct для автоматической
  * генерации кода маппинга.
  */
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface QuestionMapper extends CommonMapper {
 
   /** Преобразует Question entity в Question DTO. */
@@ -80,14 +78,15 @@ public interface QuestionMapper extends CommonMapper {
   /** Преобразует Page<Question> в GetAllQuestions200Response */
   default azhukov.model.GetAllQuestions200Response toGetAllQuestionsResponse(Page<Question> page) {
     if (page == null) return null;
-    
-    azhukov.model.GetAllQuestions200Response response = new azhukov.model.GetAllQuestions200Response();
+
+    azhukov.model.GetAllQuestions200Response response =
+        new azhukov.model.GetAllQuestions200Response();
     response.setContent(toDtoList(page.getContent()));
-    response.setTotalElements((int) page.getTotalElements());
-    response.setTotalPages(page.getTotalPages());
-    response.setSize(page.getSize());
-    response.setNumber(page.getNumber());
-    
+    response.setTotalElements((long) page.getTotalElements());
+    response.setTotalPages((long) page.getTotalPages());
+    response.setSize((long) page.getSize());
+    response.setNumber((long) page.getNumber());
+
     return response;
   }
 

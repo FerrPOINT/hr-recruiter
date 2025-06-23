@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
  * Репозиторий для работы с вопросами. Расширяет BaseRepository для автоматизации общих операций.
  */
 @Repository
-public interface QuestionRepository extends BaseRepository<Question, String> {
+public interface QuestionRepository extends BaseRepository<Question, Long> {
 
   /** Находит вопросы по вакансии */
   List<Question> findByPosition(Position position);
@@ -74,15 +74,15 @@ public interface QuestionRepository extends BaseRepository<Question, String> {
 
   /** Находит вопросы по ID вакансии */
   @Query("SELECT q FROM Question q WHERE q.position.id = :positionId")
-  List<Question> findByPositionId(@Param("positionId") String positionId);
+  List<Question> findByPositionId(@Param("positionId") Long positionId);
 
   /** Находит вопросы по ID вакансии с пагинацией */
   @Query("SELECT q FROM Question q WHERE q.position.id = :positionId")
-  Page<Question> findByPositionId(@Param("positionId") String positionId, Pageable pageable);
+  Page<Question> findByPositionId(@Param("positionId") Long positionId, Pageable pageable);
 
   /** Находит вопросы по ID вакансии, отсортированные по порядку */
   @Query("SELECT q FROM Question q WHERE q.position.id = :positionId ORDER BY q.order ASC")
-  List<Question> findByPositionIdOrderByOrderAsc(@Param("positionId") String positionId);
+  List<Question> findByPositionIdOrderByOrderAsc(@Param("positionId") Long positionId);
 
   /** Подсчитывает количество вопросов по вакансии */
   long countByPosition(Position position);
@@ -99,9 +99,9 @@ public interface QuestionRepository extends BaseRepository<Question, String> {
 
   /** Мягкое удаление вопроса (устанавливает required = false) */
   @Query("UPDATE Question q SET q.required = false WHERE q.id = :id")
-  void softDelete(@Param("id") String id);
+  void softDelete(@Param("id") Long id);
 
   /** Восстановление вопроса (устанавливает required = true) */
   @Query("UPDATE Question q SET q.required = true WHERE q.id = :id")
-  void restore(@Param("id") String id);
+  void restore(@Param("id") Long id);
 }

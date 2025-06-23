@@ -8,6 +8,7 @@ import azhukov.model.*;
 import azhukov.repository.PositionRepository;
 import azhukov.repository.UserRepository;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Сервис для управления вакансиями. Расширяет BaseService для автоматизации общих операций. */
 @Service
 @Slf4j
-public class PositionService extends BaseService<Position, String, PositionRepository> {
+public class PositionService extends BaseService<Position, Long, PositionRepository> {
 
   private final PositionMapper positionMapper;
   private final UserRepository userRepository;
@@ -47,7 +48,9 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
     // Заполняем команду, если указана
     if (request.getTeam() != null && !request.getTeam().isEmpty()) {
-      List<UserEntity> team = userRepository.findByIds(request.getTeam());
+      List<Long> teamIds =
+          request.getTeam().stream().map(Long::parseLong).collect(Collectors.toList());
+      List<UserEntity> team = userRepository.findByIds(teamIds);
       position.setTeam(team);
     }
 
@@ -57,7 +60,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Обновляет вакансию */
   @Transactional
-  public azhukov.model.Position updatePosition(String id, PositionUpdateRequest request) {
+  public azhukov.model.Position updatePosition(Long id, PositionUpdateRequest request) {
     log.info("Updating position: {}", id);
 
     Position position = findByIdOrThrow(id);
@@ -65,7 +68,9 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
     // Обновляем команду, если указана
     if (request.getTeam() != null) {
-      List<UserEntity> team = userRepository.findByIds(request.getTeam());
+      List<Long> teamIds =
+          request.getTeam().stream().map(Long::parseLong).collect(Collectors.toList());
+      List<UserEntity> team = userRepository.findByIds(teamIds);
       position.setTeam(team);
     }
 
@@ -76,7 +81,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
   /** Частично обновляет вакансию */
   @Transactional
   public azhukov.model.Position partialUpdatePosition(
-      String id, PartialUpdatePositionRequest request) {
+      Long id, PartialUpdatePositionRequest request) {
     log.info("Partially updating position: {}", id);
 
     Position position = findByIdOrThrow(id);
@@ -91,7 +96,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Получает вакансию по ID */
   @Transactional(readOnly = true)
-  public azhukov.model.Position getPositionById(String id) {
+  public azhukov.model.Position getPositionById(Long id) {
     log.debug("Getting position by id: {}", id);
     Position position = findByIdOrThrow(id);
     return positionMapper.toDto(position);
@@ -223,7 +228,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Мягко удаляет вакансию (архивирует) */
   @Transactional
-  public void softDeletePosition(String id) {
+  public void softDeletePosition(Long id) {
     log.info("Soft deleting position: {}", id);
     Position position = findByIdOrThrow(id);
     position.setStatus(Position.Status.ARCHIVED);
@@ -232,7 +237,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Восстанавливает вакансию из архива */
   @Transactional
-  public void restorePosition(String id) {
+  public void restorePosition(Long id) {
     log.info("Restoring position: {}", id);
     Position position = findByIdOrThrow(id);
     position.setStatus(Position.Status.ACTIVE);
@@ -241,7 +246,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Обновляет статус вакансии */
   @Transactional
-  public azhukov.model.Position updatePositionStatus(String id, PositionStatusEnum status) {
+  public azhukov.model.Position updatePositionStatus(Long id, PositionStatusEnum status) {
     log.info("Updating position status: {} -> {}", id, status);
     Position position = findByIdOrThrow(id);
     position.setStatus(positionMapper.mapStatus(status));
@@ -273,7 +278,7 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Получает публичную ссылку на вакансию */
   @Transactional(readOnly = true)
-  public String getPositionPublicLink(String id) {
+  public String getPositionPublicLink(Long id) {
     log.debug("Getting public link for position: {}", id);
     Position position = findByIdOrThrow(id);
     return position.getPublicLink();
@@ -281,16 +286,16 @@ public class PositionService extends BaseService<Position, String, PositionRepos
 
   /** Получает статистику по вакансии */
   @Transactional(readOnly = true)
-  public PositionStats getPositionStats(String id) {
+  public PositionStats getPositionStats(Long id) {
     log.debug("Getting stats for position: {}", id);
     Position position = findByIdOrThrow(id);
 
     PositionStats stats = new PositionStats();
     stats.setPositionId(id);
-    stats.setInterviewsTotal((int) repository.countInterviewsByPosition(id));
-    stats.setInterviewsSuccessful((int) repository.countSuccessfulInterviewsByPosition(id));
-    stats.setInterviewsInProgress((int) repository.countInProgressInterviewsByPosition(id));
-    stats.setInterviewsUnsuccessful((int) repository.countUnsuccessfulInterviewsByPosition(id));
+    stats.setInterviewsTotal((long) repository.countInterviewsByPosition(id));
+    stats.setInterviewsSuccessful((long) repository.countSuccessfulInterviewsByPosition(id));
+    stats.setInterviewsInProgress((long) repository.countInProgressInterviewsByPosition(id));
+    stats.setInterviewsUnsuccessful((long) repository.countUnsuccessfulInterviewsByPosition(id));
 
     return stats;
   }

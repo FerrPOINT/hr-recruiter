@@ -9,8 +9,4 @@
         <sqlFile path="db/changelog/changes/001-initial-schema.sql"/>
     </changeSet>
 
-    <changeSet id="005-add-transcription-fields" author="ai">
-        <sqlFile path="db/changelog/changes/005-add-transcription-fields.sql"/>
-    </changeSet>
-
 </databaseChangeLog> 

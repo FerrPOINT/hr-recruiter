@@ -56,7 +56,8 @@ services:
   # =============================================================================
   postgres:
     image: postgres:16-alpine
-    container_name: hr-recruiter-postgres
+    container_name: hr-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: hr_recruiter
       POSTGRES_USER: hr_user
@@ -64,134 +65,17 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hr_user -d hr_recruiter"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    networks:
-      - hr-recruiter-network
-    restart: unless-stopped
-
-  # =============================================================================
-  # Redis - Кэширование и сессии
-  # =============================================================================
-  # Используется для:
-  # - Кэширования часто запрашиваемых данных
-  # - Хранения сессий пользователей
-  # - Временного хранения токенов
-  # 
-  # НАСТРОЙКИ СОХРАНЕНИЯ:
-  # - appendonly yes - включить AOF (Append Only File) для надежности
-  # - save 60 1000 - сохранять каждые 60 секунд если изменилось 1000+ ключей
-  # - maxmemory 1gb - ограничение памяти
-  # - maxmemory-policy allkeys-lru - политика вытеснения
-  # =============================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: hr-recruiter-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --save 60 1000
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - hr-recruiter-network
-    restart: unless-stopped
-
-  # =============================================================================
-  # Spring Boot Application - Основное приложение
-  # =============================================================================
-  # HR Recruiter API - REST API для управления вакансиями, кандидатами, интервью
-  # 
-  # НАСТРОЙКИ JVM:
-  # - UseContainerSupport - использовать лимиты контейнера
-  # - MaxRAMPercentage=75.0 - использовать 75% доступной памяти
-  # - UseG1GC - использовать G1 Garbage Collector
-  # - UseStringDeduplication - дедупликация строк для экономии памяти
-  # 
-  # ПРОФИЛИ:
-  # - docker - профиль для работы в Docker
-  # - dev - для разработки
-  # - prod - для продакшена
-  # 
-  # ОГРАНИЧЕНИЯ ЛОГОВ:
-  # - Максимальный размер файла: 100MB
-  # - Количество файлов: 3
-  # - Ротация: автоматическая
-  # =============================================================================
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: hr-recruiter-app
-    ports:
-      - "8080:8080"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hr_recruiter
-      SPRING_DATASOURCE_USERNAME: hr_user
-      SPRING_DATASOURCE_PASSWORD: hr_password
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      JAVA_OPTS: >-
-        -XX:+UseContainerSupport
-        -XX:MaxRAMPercentage=75.0
-        -XX:+UseG1GC
-        -Djava.security.egd=file:/dev/./urandom
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    networks:
-      - hr-recruiter-network
-    restart: unless-stopped
+      - pgdata:/var/lib/postgresql/data
 
   whisper:
-    image: linuxserver/faster-whisper:latest
-    container_name: hr-recruiter-whisper
-    environment:
-      - MODEL_SIZE=small
-      - LANGUAGE=ru
-    ports:
-      - "10300:10300"
-    networks:
-      - hr-recruiter-network
+    image: ghcr.io/ggerganov/whisper.cpp:latest
+    container_name: hr-whisper
     restart: unless-stopped
-    # TODO: Для лучшего качества можно сменить MODEL_SIZE на medium или large-v2
+    ports:
+      - "9000:9000"
 
-# =============================================================================
-# Volumes - Постоянное хранение данных
-# =============================================================================
-# Все volumes используют bind mount для прямого доступа к данным на хосте
-# Это позволяет легко делать бэкапы и восстанавливать данные
-# 
-# ОГРАНИЧЕНИЯ РАЗМЕРА:
-# - postgres_data: неограниченно (контролируется настройками PostgreSQL)
-# - redis_data: ~1GB (контролируется настройками Redis)
-# - prometheus_data: 10GB (контролируется настройками Prometheus)
-# - grafana_data: ~5GB (контролируется настройками Grafana)
-# =============================================================================
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
+  pgdata:
 
 # =============================================================================
 # Networks - Сетевая изоляция

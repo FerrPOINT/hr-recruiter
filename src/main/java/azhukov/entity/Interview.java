@@ -17,7 +17,8 @@ import org.hibernate.annotations.UpdateTimestamp;
       @Index(name = "idx_interviews_candidate_id", columnList = "candidate_id"),
       @Index(name = "idx_interviews_position_id", columnList = "position_id"),
       @Index(name = "idx_interviews_status", columnList = "status"),
-      @Index(name = "idx_interviews_started_at", columnList = "started_at")
+      @Index(name = "idx_interviews_started_at", columnList = "started_at"),
+      @Index(name = "idx_interviews_created_at", columnList = "created_at")
     })
 @Data
 @NoArgsConstructor
@@ -28,8 +29,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Interview {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "candidate_id", nullable = false)

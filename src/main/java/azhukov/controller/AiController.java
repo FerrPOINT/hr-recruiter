@@ -6,16 +6,12 @@ import azhukov.model.Question;
 import azhukov.model.QuestionTypeEnum;
 import azhukov.model.TranscribeAudio200Response;
 import azhukov.model.TranscribeInterviewAnswer200Response;
-import azhukov.model.TranscribeInterviewAnswer400Response;
-import azhukov.model.TranscribeInterviewAnswer503Response;
 import azhukov.service.RewriteService;
 import azhukov.service.TranscriptionService;
 import azhukov.service.WhisperService;
 import azhukov.service.ai.AIService;
 import azhukov.service.ai.claude.ClaudeService;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -67,10 +63,9 @@ public class AiController implements AiApi {
               .map(
                   q -> {
                     Question question = new Question();
-                    question.setId(UUID.randomUUID());
                     question.setText(q.trim());
                     question.setType(QuestionTypeEnum.TEXT);
-                    question.setOrder(questions.indexOf(q) + 1);
+                    question.setOrder((long) (questions.indexOf(q) + 1));
                     question.setIsRequired(true);
                     return question;
                   })
@@ -88,7 +83,7 @@ public class AiController implements AiApi {
   @Override
   public ResponseEntity<TranscribeAudio200Response> transcribeAudio(MultipartFile audio) {
     log.info(
-        "Запрос на транскрипцию аудио файла: {}",
+        "Запрос на транскрибацию аудио файла: {}",
         audio != null ? audio.getOriginalFilename() : "null");
 
     try {
@@ -104,7 +99,7 @@ public class AiController implements AiApi {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
       }
 
-      // Используем WhisperService для транскрипции
+      // Используем WhisperService для транскрибации
       String transcript = whisperService.transcribeAudio(audio);
 
       TranscribeAudio200Response response = new TranscribeAudio200Response();
@@ -114,23 +109,23 @@ public class AiController implements AiApi {
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
-      log.error("Ошибка при транскрипции аудио", e);
+      log.error("Ошибка при транскрибации аудио", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
 
   @Override
   public ResponseEntity<TranscribeInterviewAnswer200Response> transcribeInterviewAnswer(
-      MultipartFile audioFile, UUID interviewAnswerId) {
-    
+      MultipartFile audioFile, java.util.UUID interviewAnswerId) {
+
     try {
       log.info("Received transcription request for answer ID: {}", interviewAnswerId);
-      
+
       // Валидация входных данных
       if (audioFile.isEmpty()) {
         throw new IllegalArgumentException("Audio file is empty");
       }
-      
+
       if (interviewAnswerId == null) {
         throw new IllegalArgumentException("Interview answer ID is required");
       }
@@ -140,14 +135,18 @@ public class AiController implements AiApi {
         throw new RuntimeException("Transcription services are not available");
       }
 
+      // Преобразуем UUID в Long (например, используем leastSignificantBits)
+      Long answerIdLong = interviewAnswerId.getLeastSignificantBits();
+
       // Обработка транскрибации
-      String formattedText = transcriptionService.processAudioTranscription(audioFile, interviewAnswerId.toString());
-      
+      String formattedText =
+          transcriptionService.processAudioTranscription(audioFile, answerIdLong);
+
       TranscribeInterviewAnswer200Response response = new TranscribeInterviewAnswer200Response();
       response.setSuccess(true);
       response.setFormattedText(formattedText);
       response.setInterviewAnswerId(interviewAnswerId);
-      
+
       return ResponseEntity.ok(response);
 
     } catch (IllegalArgumentException e) {

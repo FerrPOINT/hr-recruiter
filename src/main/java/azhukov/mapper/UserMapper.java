@@ -12,9 +12,7 @@ import org.mapstruct.*;
  * Маппер для преобразования между сущностями и DTO пользователей. Использует MapStruct для
  * автоматической генерации кода маппинга.
  */
-@Mapper(
-    componentModel = "spring",
-    unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface UserMapper extends CommonMapper {
 
   /** Преобразует UserEntity в User DTO */
@@ -25,6 +23,7 @@ public interface UserMapper extends CommonMapper {
   @Mapping(target = "role", source = "role")
   @Mapping(target = "avatarUrl", source = "avatarUrl")
   @Mapping(target = "language", source = "language")
+  @Mapping(target = "phone", source = "phone")
   User toDto(UserEntity entity);
 
   /** Преобразует UserCreateRequest в UserEntity */
@@ -39,6 +38,7 @@ public interface UserMapper extends CommonMapper {
   @Mapping(target = "active", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "phone", source = "phone")
   UserEntity toEntity(UserCreateRequest request);
 
   /** Обновляет UserEntity из BaseUserFields */
@@ -52,6 +52,7 @@ public interface UserMapper extends CommonMapper {
   @Mapping(target = "active", ignore = true)
   @Mapping(target = "createdAt", ignore = true)
   @Mapping(target = "updatedAt", ignore = true)
+  @Mapping(target = "phone", source = "phone")
   void updateEntityFromRequest(BaseUserFields request, @MappingTarget UserEntity entity);
 
   /** Преобразует список UserEntity в список User DTO */

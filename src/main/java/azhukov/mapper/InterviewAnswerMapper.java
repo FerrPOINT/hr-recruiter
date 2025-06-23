@@ -8,7 +8,6 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.mapstruct.ReportingPolicy;
 
 /**
  * Маппер для преобразования между сущностью InterviewAnswer и DTO. Использует MapStruct для

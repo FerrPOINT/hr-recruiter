@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Сервис для управления пользователями. Расширяет BaseService для автоматизации общих операций. */
 @Service
 @Slf4j
-public class UserService extends BaseService<UserEntity, String, UserRepository> {
+public class UserService extends BaseService<UserEntity, Long, UserRepository> {
 
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
@@ -48,7 +48,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Обновляет пользователя */
   @Transactional
-  public azhukov.model.User updateUser(String id, BaseUserFields request) {
+  public azhukov.model.User updateUser(Long id, BaseUserFields request) {
     log.info("Updating user: {}", id);
 
     UserEntity user = findByIdOrThrow(id);
@@ -60,7 +60,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Получает пользователя по ID */
   @Transactional(readOnly = true)
-  public azhukov.model.User getUserById(String id) {
+  public azhukov.model.User getUserById(Long id) {
     log.debug("Getting user by id: {}", id);
     UserEntity user = findByIdOrThrow(id);
     return userMapper.toDto(user);
@@ -129,7 +129,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Получает пользователя по ID (алиас для совместимости) */
   @Transactional(readOnly = true)
-  public azhukov.model.User findUserById(String id) {
+  public azhukov.model.User findUserById(Long id) {
     return getUserById(id);
   }
 
@@ -182,7 +182,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Получает пользователей по ID */
   @Transactional(readOnly = true)
-  public List<azhukov.model.User> getUsersByIds(List<String> ids) {
+  public List<azhukov.model.User> getUsersByIds(List<Long> ids) {
     log.debug("Getting users by ids: {}", ids);
     List<UserEntity> users = repository.findByIds(ids);
     return userMapper.toDtoList(users);
@@ -190,7 +190,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Мягко удаляет пользователя */
   @Transactional
-  public void softDeleteUser(String id) {
+  public void softDeleteUser(Long id) {
     log.info("Soft deleting user: {}", id);
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("User not found with id: " + id);
@@ -200,7 +200,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Восстанавливает пользователя */
   @Transactional
-  public void restoreUser(String id) {
+  public void restoreUser(Long id) {
     log.info("Restoring user: {}", id);
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("User not found with id: " + id);
@@ -210,7 +210,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Удаляет пользователя */
   @Transactional
-  public void deleteUser(String id) {
+  public void deleteUser(Long id) {
     log.debug("Deleting user with ID: {}", id);
 
     if (!repository.existsById(id)) {
@@ -223,7 +223,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Изменяет пароль пользователя */
   @Transactional
-  public void changePassword(String id, String newPassword) {
+  public void changePassword(Long id, String newPassword) {
     log.info("Changing password for user: {}", id);
     UserEntity user = findByIdOrThrow(id);
     user.setPassword(passwordEncoder.encode(newPassword));
@@ -232,7 +232,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Активирует пользователя */
   @Transactional
-  public void activateUser(String id) {
+  public void activateUser(Long id) {
     log.info("Activating user: {}", id);
     UserEntity user = findByIdOrThrow(id);
     user.setActive(true);
@@ -241,7 +241,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Деактивирует пользователя */
   @Transactional
-  public void deactivateUser(String id) {
+  public void deactivateUser(Long id) {
     log.info("Deactivating user: {}", id);
     UserEntity user = findByIdOrThrow(id);
     user.setActive(false);
@@ -250,7 +250,7 @@ public class UserService extends BaseService<UserEntity, String, UserRepository>
 
   /** Переключает статус пользователя */
   @Transactional
-  public azhukov.model.User toggleUserStatus(String id) {
+  public azhukov.model.User toggleUserStatus(Long id) {
     log.debug("Toggling status for user with ID: {}", id);
 
     UserEntity user = findByIdOrThrow(id);

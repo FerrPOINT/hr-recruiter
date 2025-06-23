@@ -13,7 +13,12 @@ import org.hibernate.annotations.CreationTimestamp;
     indexes = {
       @Index(name = "idx_interview_answers_interview_id", columnList = "interview_id"),
       @Index(name = "idx_interview_answers_question_id", columnList = "question_id"),
-      @Index(name = "idx_interview_answers_created_at", columnList = "created_at")
+      @Index(name = "idx_interview_answers_created_at", columnList = "created_at"),
+      @Index(name = "idx_interview_answers_raw_transcription", columnList = "raw_transcription"),
+      @Index(
+          name = "idx_interview_answers_formatted_transcription",
+          columnList = "formatted_transcription"),
+      @Index(name = "idx_interview_answers_score", columnList = "score")
     })
 @Data
 @NoArgsConstructor
@@ -24,8 +29,8 @@ import org.hibernate.annotations.CreationTimestamp;
 public class InterviewAnswer {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "interview_id", nullable = false)

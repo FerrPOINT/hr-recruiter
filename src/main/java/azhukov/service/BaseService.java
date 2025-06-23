@@ -1,13 +1,12 @@
 package azhukov.service;
 
 import azhukov.exception.ResourceNotFoundException;
-import azhukov.repository.BaseRepository;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -15,32 +14,32 @@ import org.springframework.transaction.annotation.Transactional;
  * логирование.
  *
  * @param <T> Тип сущности
- * @param <ID> Тип ID сущности
  * @param <R> Тип репозитория
  */
 @Slf4j
-public abstract class BaseService<T, ID, R extends BaseRepository<T, ID>> {
+public abstract class BaseService<
+    T, R extends java.io.Serializable, REPO extends JpaRepository<T, Long>> {
 
-  protected final R repository;
+  protected final REPO repository;
 
-  protected BaseService(R repository) {
+  protected BaseService(REPO repository) {
     this.repository = repository;
   }
 
   /** Находит сущность по ID */
   @Transactional(readOnly = true)
-  public Optional<T> findById(ID id) {
+  public Optional<T> findById(Long id) {
     log.debug("Finding entity by id: {}", id);
     return repository.findById(id);
   }
 
   /** Находит сущность по ID или выбрасывает исключение */
   @Transactional(readOnly = true)
-  public T findByIdOrThrow(ID id) {
+  public T findByIdOrThrow(Long id) {
     log.debug("Finding entity by id: {}", id);
     return repository
         .findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Entity not found with id: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("Not found: " + id));
   }
 
   /** Находит все сущности */
@@ -73,7 +72,7 @@ public abstract class BaseService<T, ID, R extends BaseRepository<T, ID>> {
 
   /** Обновляет сущность */
   @Transactional
-  public T update(ID id, T entity) {
+  public T update(Long id, T entity) {
     log.debug("Updating entity with id: {}", id);
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("Entity not found with id: " + id);
@@ -83,7 +82,7 @@ public abstract class BaseService<T, ID, R extends BaseRepository<T, ID>> {
 
   /** Удаляет сущность по ID */
   @Transactional
-  public void deleteById(ID id) {
+  public void deleteById(Long id) {
     log.debug("Deleting entity with id: {}", id);
     if (!repository.existsById(id)) {
       throw new ResourceNotFoundException("Entity not found with id: " + id);
@@ -93,7 +92,7 @@ public abstract class BaseService<T, ID, R extends BaseRepository<T, ID>> {
 
   /** Проверяет существование сущности по ID */
   @Transactional(readOnly = true)
-  public boolean existsById(ID id) {
+  public boolean existsById(Long id) {
     return repository.existsById(id);
   }
 
@@ -103,36 +102,8 @@ public abstract class BaseService<T, ID, R extends BaseRepository<T, ID>> {
     return repository.count();
   }
 
-  /** Находит сущности, созданные после указанной даты */
-  @Transactional(readOnly = true)
-  public List<T> findByCreatedAtAfter(LocalDateTime dateTime) {
-    log.debug("Finding entities created after: {}", dateTime);
-    return repository.findByCreatedAtAfter(dateTime);
-  }
-
-  /** Находит сущности в указанном диапазоне дат создания */
-  @Transactional(readOnly = true)
-  public List<T> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end) {
-    log.debug("Finding entities created between {} and {}", start, end);
-    return repository.findByCreatedAtBetween(start, end);
-  }
-
-  /** Мягкое удаление сущности */
-  @Transactional
-  public void softDelete(ID id) {
-    log.debug("Soft deleting entity with id: {}", id);
-    repository.softDelete(id);
-  }
-
-  /** Восстановление мягко удаленной сущности */
-  @Transactional
-  public void restore(ID id) {
-    log.debug("Restoring entity with id: {}", id);
-    repository.restore(id);
-  }
-
   /** Получает репозиторий для специфических операций */
-  protected R getRepository() {
+  protected REPO getRepository() {
     return repository;
   }
 }

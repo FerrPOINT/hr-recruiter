@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
  * Репозиторий для работы с вакансиями. Расширяет BaseRepository для автоматизации общих операций.
  */
 @Repository
-public interface PositionRepository extends BaseRepository<Position, String> {
+public interface PositionRepository extends BaseRepository<Position, Long> {
 
   /** Находит вакансии по статусу */
   List<Position> findByStatus(Position.Status status);
@@ -85,29 +85,29 @@ public interface PositionRepository extends BaseRepository<Position, String> {
   List<Position> findByPublicLinkIsNotNull();
 
   /** Подсчитывает общее количество интервью по позиции */
-  @Query("SELECT COUNT(i) FROM Interview i WHERE i.positionId = :positionId")
-  long countInterviewsByPosition(@Param("positionId") String positionId);
+  @Query("SELECT COUNT(i) FROM Interview i WHERE i.position.id = :positionId")
+  long countInterviewsByPosition(@Param("positionId") Long positionId);
 
   /** Подсчитывает количество успешных интервью по позиции */
   @Query(
-      "SELECT COUNT(i) FROM Interview i WHERE i.positionId = :positionId AND i.result = 'SUCCESSFUL'")
-  long countSuccessfulInterviewsByPosition(@Param("positionId") String positionId);
+      "SELECT COUNT(i) FROM Interview i WHERE i.position.id = :positionId AND i.result = 'SUCCESSFUL'")
+  long countSuccessfulInterviewsByPosition(@Param("positionId") Long positionId);
 
   /** Подсчитывает количество интервью в процессе по позиции */
   @Query(
-      "SELECT COUNT(i) FROM Interview i WHERE i.positionId = :positionId AND i.status = 'IN_PROGRESS'")
-  long countInProgressInterviewsByPosition(@Param("positionId") String positionId);
+      "SELECT COUNT(i) FROM Interview i WHERE i.position.id = :positionId AND i.status = 'IN_PROGRESS'")
+  long countInProgressInterviewsByPosition(@Param("positionId") Long positionId);
 
   /** Подсчитывает количество неуспешных интервью по позиции */
   @Query(
-      "SELECT COUNT(i) FROM Interview i WHERE i.positionId = :positionId AND i.result = 'UNSUCCESSFUL'")
-  long countUnsuccessfulInterviewsByPosition(@Param("positionId") String positionId);
+      "SELECT COUNT(i) FROM Interview i WHERE i.position.id = :positionId AND i.result = 'UNSUCCESSFUL'")
+  long countUnsuccessfulInterviewsByPosition(@Param("positionId") Long positionId);
 
   /** Мягкое удаление вакансии (устанавливает статус ARCHIVED) */
   @Query("UPDATE Position p SET p.status = 'ARCHIVED' WHERE p.id = :id")
-  void softDelete(@Param("id") String id);
+  void softDelete(@Param("id") Long id);
 
   /** Восстановление вакансии (устанавливает статус ACTIVE) */
   @Query("UPDATE Position p SET p.status = 'ACTIVE' WHERE p.id = :id")
-  void restore(@Param("id") String id);
+  void restore(@Param("id") Long id);
 }

@@ -29,8 +29,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 public class Position {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
   @NotBlank(message = "Название вакансии обязательно")
   @Column(nullable = false, length = 200)
