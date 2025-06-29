@@ -196,37 +196,4 @@ public class AiController implements AiApi {
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
-
-  /**
-   * Транскрибирует аудио ответ на интервью БЕЗ форматирования Claude (только Whisper) Для отладки и
-   * сравнения качества транскрибации
-   */
-  public ResponseEntity<TranscribeAudio200Response> transcribeAnswerRaw(
-      MultipartFile audioFile, Long interviewId, Long questionId) {
-    try {
-      log.info(
-          "Processing RAW audio transcription for interview ID: {} question ID: {}, file: {} ({} bytes)",
-          interviewId,
-          questionId,
-          audioFile.getOriginalFilename(),
-          audioFile.getSize());
-
-      // Используем только Whisper без Claude форматирования
-      String rawTranscription = whisperService.transcribeAudio(audioFile);
-
-      TranscribeAudio200Response response = new TranscribeAudio200Response();
-      response.setTranscript(rawTranscription);
-
-      log.info(
-          "RAW audio transcription completed for interview ID: {}, question ID: {}, length: {} chars",
-          interviewId,
-          questionId,
-          rawTranscription.length());
-
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("Error in transcribeAnswerRaw endpoint", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
 }
