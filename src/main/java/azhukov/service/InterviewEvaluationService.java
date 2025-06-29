@@ -4,6 +4,7 @@ import azhukov.config.ApplicationProperties;
 import azhukov.entity.Interview;
 import azhukov.entity.InterviewAnswer;
 import azhukov.entity.Position;
+import azhukov.repository.InterviewAnswerRepository;
 import azhukov.repository.InterviewRepository;
 import azhukov.service.ai.AIService;
 import java.util.ArrayList;
@@ -21,17 +22,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewEvaluationService {
 
   private final InterviewRepository interviewRepository;
+  private final InterviewAnswerRepository interviewAnswerRepository;
   private final AIService aiService;
 
-  /** Фоновая задача - оценивает завершенные собеседования каждые 5 минут */
-  @Scheduled(fixedRate = 300000) // 5 минут
+  /** Фоновая задача - оценивает завершенные собеседования каждую 1 минуту */
+  @Scheduled(fixedRate = 60000) // 1 минута
   @Transactional
   public void evaluateFinishedInterviews() {
     log.info("Starting background evaluation of finished interviews");
 
     try {
       List<Interview> finishedInterviews =
-          interviewRepository.findByStatusAndResultIsNull(Interview.Status.FINISHED);
+          interviewRepository.findByStatusAndResultIsNullWithAnswers(Interview.Status.FINISHED);
 
       log.info("Found {} finished interviews to evaluate", finishedInterviews.size());
 
@@ -55,8 +57,36 @@ public class InterviewEvaluationService {
     log.info("Evaluating interview {}", interview.getId());
 
     List<InterviewAnswer> answers = interview.getAnswers();
+    log.info("Interview {} has {} answers", interview.getId(), answers.size());
+
     if (answers.isEmpty()) {
       log.warn("Interview {} has no answers to evaluate", interview.getId());
+
+      // Дополнительная диагностика - проверим через репозиторий
+      List<InterviewAnswer> answersFromRepo =
+          interviewAnswerRepository.findByInterviewId(interview.getId());
+      log.info(
+          "Interview {} has {} answers from repository", interview.getId(), answersFromRepo.size());
+
+      if (!answersFromRepo.isEmpty()) {
+        log.warn(
+            "Interview {} has answers in repository but not in entity - possible lazy loading issue",
+            interview.getId());
+        // Попробуем оценить ответы из репозитория
+        for (InterviewAnswer answer : answersFromRepo) {
+          try {
+            double score = evaluateAnswer(answer, interview.getPosition());
+            if (score > 0) {
+              answer.setScore(score);
+              interviewAnswerRepository.save(answer);
+              log.info("Evaluated answer {} from repository with score: {}", answer.getId(), score);
+            }
+          } catch (Exception e) {
+            log.error(
+                "Error evaluating answer {} from repository: {}", answer.getId(), e.getMessage());
+          }
+        }
+      }
       return;
     }
 
@@ -75,6 +105,9 @@ public class InterviewEvaluationService {
     if (!scores.isEmpty()) {
       // Вычисляем средний балл
       double averageScore = scores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+
+      // Округляем до десятых вверх
+      averageScore = Math.ceil(averageScore * 10) / 10.0;
 
       // Сохраняем средний балл в интервью
       interview.setAiScore(averageScore);

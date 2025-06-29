@@ -4,6 +4,7 @@ import azhukov.entity.Position;
 import azhukov.entity.UserEntity;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -129,4 +130,12 @@ public interface PositionRepository extends BaseRepository<Position, Long> {
   /** Восстановление вакансии (устанавливает статус ACTIVE) */
   @Query("UPDATE Position p SET p.status = 'ACTIVE' WHERE p.id = :id")
   void restore(@Param("id") Long id);
+
+  /** Находит вакансию по ID с загрузкой topics в одном запросе */
+  @Query(
+      "SELECT DISTINCT p FROM Position p "
+          + "LEFT JOIN FETCH p.topics "
+          + "LEFT JOIN FETCH p.createdBy "
+          + "WHERE p.id = :id")
+  Optional<Position> findByIdWithTopicsAndTeam(@Param("id") Long id);
 }

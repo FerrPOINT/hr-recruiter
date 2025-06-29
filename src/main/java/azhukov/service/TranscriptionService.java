@@ -10,6 +10,8 @@ import azhukov.repository.InterviewRepository;
 import azhukov.repository.QuestionRepository;
 import azhukov.service.ai.AIService;
 import azhukov.service.ai.AIServiceException;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,27 +33,48 @@ public class TranscriptionService {
   private final QuestionRepository questionRepository;
   private final InterviewAnswerRepository interviewAnswerRepository;
   private final CandidateRepository candidateRepository;
+  private final InterviewService interviewService;
 
   private static final String FORMATTING_PROMPT =
       """
-        Ты - ассистент для форматирования транскрибированного текста. Твоя задача - привести текст в читаемый вид, но НЕ добавлять никакой новой информации.
+                    Ты форматируешь транскрибированный текст на русском языке. ВАЖНО: возвращай ТОЛЬКО отформатированный текст, БЕЗ комментариев, примечаний или объяснений.
 
-        ПРАВИЛА:
-        - Исправляй только очевидные ошибки транскрибации (пунктуация, заглавные буквы)
-        - НЕ добавляй слова, которых нет в оригинале
-        - НЕ изменяй смысл сказанного
-        - Сохраняй разговорный стиль
-        - Убирай только явные артефакты (повторы, междометия типа "э-э", "м-м")
+                    КРИТИЧЕСКИ ВАЖНЫЕ ПРАВИЛА:
+                    - Текст на русском языке
+                    - НИКОГДА не заменяй русские слова на английские
+                    - НИКОГДА не "исправляй" русские названия, имена, термины
+                    - НИКОГДА не переводишь русские слова на английский
+                    - Сохраняй ВСЕ русские слова точно как они есть
+                    - Если слово звучит как русское - оставляй его русским
+                    - Если слово звучит как английское - оставляй его английским
+                    - НЕ угадывай и НЕ предполагай правильное написание
 
-        Пример:
-        Вход: "э-э ну я работал в компании э-э как её там да в общем занимался разработкой"
-        Выход: "Ну я работал в компании, в общем занимался разработкой"
+                    ПРАВИЛА ФОРМАТИРОВАНИЯ:
+                    - Исправляй только очевидные ошибки транскрибации (пунктуация, заглавные буквы)
+                    - НЕ добавляй слова, которых нет в оригинале
+                    - НЕ изменяй смысл сказанного
+                    - Сохраняй разговорный стиль
+                    - Убирай только явные артефакты (повторы, междометия типа "э-э", "м-м")
+                    - Всегда начинай предложение с заглавной буквы (даже если это одно слово)
+                    - НИКОГДА не добавляй комментарии в скобках или примечания
+                    - НИКОГДА не объясняй что ты делал
 
-        Вход: "давайте поговорим о вашем опыте работы"
-        Выход: "Давайте поговорим о вашем опыте работы"
+                    ПРИМЕРЫ (возвращай ТОЛЬКО правую часть):
+                    "э-э ну я работал в компании э-э как её там да в общем занимался разработкой" → "Ну я работал в компании, в общем занимался разработкой"
+                    "давайте поговорим о вашем опыте работы" → "Давайте поговорим о вашем опыте работы"
+                    "я слушаю музыку группы Heart of Kaza" → "Я слушаю музыку группы Heart of Kaza"
+                    "да" → "Да"
+                    "нет" → "Нет"
+                    "java" → "Java"
+                    "spring boot" → "Spring Boot"
+                    "heart of kaza" → "Heart of Kaza"
+                    "копночная музыка" → "Копночная музыка"
+                    "я работал с джава" → "Я работал с джава" (НЕ исправляй на "Java")
+                    "использовал спринг" → "Использовал спринг" (НЕ исправляй на "Spring")
+                    "делал фронтенд на реакте" → "Делал фронтенд на реакте" (НЕ исправляй на "React")
 
-        Отформатируй следующий текст:
-        """;
+                    Отформатируй следующий текст (верни ТОЛЬКО результат):
+                    """;
 
   /**
    * Пайплайн транскрибации аудио: 1. Whisper — транскрибация аудио в сырой текст (rawTranscription)
@@ -89,15 +112,17 @@ public class TranscriptionService {
           whisperTime,
           rawTranscription.length());
 
-      // Шаг 2: Форматирование через Claude
-      long claudeStart = System.currentTimeMillis();
-      String formattedText = formatTranscription(rawTranscription);
-      long claudeTime = System.currentTimeMillis() - claudeStart;
+      // ВРЕМЕННО ОТКЛЮЧЕНО: Claude форматирование
+      // long claudeStart = System.currentTimeMillis();
+      // String formattedText = formatTranscription(rawTranscription);
+      // long claudeTime = System.currentTimeMillis() - claudeStart;
+
+      // Используем сырой текст как отформатированный
+      String formattedText = rawTranscription;
+      long claudeTime = 0;
 
       log.info(
-          "Claude formatting completed in {} ms, length: {} chars",
-          claudeTime,
-          formattedText.length());
+          "Claude formatting SKIPPED (using raw text), length: {} chars", formattedText.length());
 
       // Шаг 3: Создание InterviewAnswer и сохранение в БД
       long dbStart = System.currentTimeMillis();
@@ -113,10 +138,9 @@ public class TranscriptionService {
       long totalTime = System.currentTimeMillis() - startTime;
 
       log.info(
-          "Total transcription pipeline completed successfully in {} ms (Whisper: {} ms, Claude: {} ms, DB: {} ms)",
+          "Total transcription pipeline completed successfully in {} ms (Whisper: {} ms, Claude: SKIPPED, DB: {} ms)",
           totalTime,
           whisperTime,
-          claudeTime,
           dbTime);
 
       return interviewAnswerId;
@@ -235,6 +259,24 @@ public class TranscriptionService {
               .findById(interviewId)
               .orElseThrow(() -> new RuntimeException("Interview not found: " + interviewId));
 
+      // Проверяем, это первый вопрос?
+      List<InterviewAnswer> existingAnswers =
+          interviewAnswerRepository.findByInterviewId(interviewId);
+      boolean isFirstQuestion = existingAnswers.isEmpty();
+
+      if (isFirstQuestion) {
+        // Это первый вопрос - начинаем интервью
+        log.info("First question for interview: {}, starting interview", interviewId);
+        interview.setStatus(Interview.Status.IN_PROGRESS);
+
+        // Время начала = текущее время
+        LocalDateTime startTime = LocalDateTime.now();
+        interview.setStartedAt(startTime);
+
+        interviewRepository.save(interview);
+        log.info("Interview {} started at: {}", interviewId, startTime);
+      }
+
       // Создаем InterviewAnswer с правильной связью с интервью
       InterviewAnswer answer =
           InterviewAnswer.builder()
@@ -242,6 +284,7 @@ public class TranscriptionService {
               .question(question)
               .rawTranscription(rawTranscription)
               .formattedTranscription(formattedText)
+              .answerText(formattedText)
               .build();
 
       interviewAnswerRepository.save(answer);
@@ -251,6 +294,32 @@ public class TranscriptionService {
           questionId,
           interviewId,
           position.getTitle());
+
+      // Дополнительная проверка сохранения
+      InterviewAnswer savedAnswer = interviewAnswerRepository.findById(answer.getId()).orElse(null);
+      if (savedAnswer != null) {
+        log.info(
+            "InterviewAnswer {} successfully saved and retrieved from database", answer.getId());
+      } else {
+        log.error("InterviewAnswer {} was not found in database after save!", answer.getId());
+      }
+
+      // Проверяем, это последний вопрос?
+      int totalQuestions = position.getQuestionsCount();
+      long answeredQuestions = interviewAnswerRepository.countByInterviewId(interviewId);
+
+      log.info(
+          "Interview {}: answered {}/{} questions", interviewId, answeredQuestions, totalQuestions);
+
+      if (answeredQuestions >= totalQuestions) {
+        // Это последний ответ - завершаем собеседование атомарно
+        log.info(
+            "Last answer submitted for interview: {}, finishing interview (atomic)", interviewId);
+        interview.setStatus(Interview.Status.FINISHED); // или нужный финальный статус
+        interview.setFinishedAt(LocalDateTime.now());
+        interviewRepository.save(interview);
+        log.info("Interview {} marked as FINISHED", interviewId);
+      }
 
       return answer.getId();
     } catch (Exception e) {

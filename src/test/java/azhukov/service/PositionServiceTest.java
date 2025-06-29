@@ -114,7 +114,7 @@ class PositionServiceTest {
   @Test
   void getPositionById_Success() {
     // Arrange
-    when(positionRepository.findById(1L)).thenReturn(Optional.of(testPosition));
+    when(positionRepository.findByIdWithTopicsAndTeam(1L)).thenReturn(Optional.of(testPosition));
     when(positionMapper.toDto(testPosition)).thenReturn(testPositionDto);
 
     // Act
@@ -123,20 +123,20 @@ class PositionServiceTest {
     // Assert
     assertNotNull(result);
     assertEquals(testPositionDto.getId(), result.getId());
-    verify(positionRepository).findById(1L);
+    verify(positionRepository).findByIdWithTopicsAndTeam(1L);
     verify(positionMapper).toDto(testPosition);
   }
 
   @Test
   void getPositionById_PositionNotFound_ThrowsResourceNotFoundException() {
     // Arrange
-    when(positionRepository.findById(1L)).thenReturn(Optional.empty());
+    when(positionRepository.findByIdWithTopicsAndTeam(1L)).thenReturn(Optional.empty());
 
     // Act & Assert
     ResourceNotFoundException exception =
         assertThrows(ResourceNotFoundException.class, () -> positionService.getPositionById(1L));
-    assertEquals("Not found: 1", exception.getMessage());
-    verify(positionRepository).findById(1L);
+    assertEquals("Position not found with id: 1", exception.getMessage());
+    verify(positionRepository).findByIdWithTopicsAndTeam(1L);
   }
 
   @Test

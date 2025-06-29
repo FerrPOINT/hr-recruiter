@@ -92,8 +92,10 @@ services:
       - "9000:9000"
     environment:
       - ASR_ENGINE=openai_whisper
-      - ASR_MODEL=tiny
+      - ASR_MODEL=medium
       - ASR_DEVICE=cpu
+      - ASR_LANGUAGE=ru
+      - ASR_TEMPERATURE=0.0
 
   # =============================================================================
   # Spring Boot Application
@@ -112,6 +114,12 @@ services:
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - APP_AI_TRANSCRIPTION_WHISPER_URL=http://whisper:9000
+      - APP_AI_TRANSCRIPTION_WHISPER_LANGUAGE=ru
+      - APP_AI_TRANSCRIPTION_WHISPER_MODEL=medium
+      - APP_AI_TRANSCRIPTION_WHISPER_TIMEOUT=60000
+      - APP_AI_TRANSCRIPTION_WHISPER_WORD_TIMESTAMPS=true
+      - APP_AI_TRANSCRIPTION_WHISPER_CONDITION_ON_PREVIOUS_TEXT=false
+      - APP_AI_TRANSCRIPTION_WHISPER_TEMPERATURE=0.0
     depends_on:
       - postgres
       - redis

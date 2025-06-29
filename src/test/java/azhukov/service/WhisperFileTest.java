@@ -33,7 +33,16 @@ public class WhisperFileTest {
 
     // Создаем WhisperService
     WhisperService.WhisperServiceProperties props =
-        new WhisperService.WhisperServiceProperties("http://localhost:9000", 30000, 3);
+        new WhisperService.WhisperServiceProperties(
+            "http://localhost:9000",
+            60000,
+            3,
+            new String[] {"mp3", "wav", "m4a", "ogg", "flac", "aac"},
+            "ru",
+            "medium",
+            true,
+            false,
+            0.0);
     WhisperService whisperService = new WhisperService(props);
 
     // Проверяем доступность сервиса

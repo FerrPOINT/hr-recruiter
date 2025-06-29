@@ -55,7 +55,7 @@ public class InterviewAnswer {
   private String rawTranscription; // Сырой транскрибированный текст от Whisper
 
   @Column(name = "formatted_transcription", columnDefinition = "TEXT")
-  private String formattedTranscription; // Отформатированный текст от Claude
+  private String formattedTranscription; // Отформатированный текст от ИИ
 
   @Column(name = "score")
   private Double score; // Оценка от 0 до 100

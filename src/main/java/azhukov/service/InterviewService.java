@@ -13,7 +13,6 @@ import azhukov.mapper.PositionMapper;
 import azhukov.mapper.QuestionMapper;
 import azhukov.model.GetInterview200Response;
 import azhukov.model.InterviewTranscribeResponse;
-import azhukov.model.ListInterviews200Response;
 import azhukov.repository.CandidateRepository;
 import azhukov.repository.InterviewAnswerRepository;
 import azhukov.repository.InterviewRepository;
@@ -122,7 +121,7 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
   }
 
   /** Получает список собеседований с пагинацией и возвращает DTO */
-  public ListInterviews200Response listInterviews(
+  public Page<azhukov.model.Interview> listInterviews(
       Long positionId, Long candidateId, Long page, Long size) {
     log.info(
         "Listing interviews with positionId: {}, candidateId: {}, page: {}, size: {}",
@@ -136,13 +135,7 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize);
 
     Page<Interview> interviewsPage = listInterviews(positionId, candidateId, pageRequest);
-
-    List<azhukov.model.Interview> interviewDtos =
-        interviewMapper.toDtoList(interviewsPage.getContent());
-
-    return new ListInterviews200Response()
-        .items(interviewDtos)
-        .total((long) interviewsPage.getTotalElements());
+    return interviewsPage.map(interviewMapper::toDto);
   }
 
   /** Получает собеседования по вакансии и возвращает DTO */

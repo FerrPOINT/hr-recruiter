@@ -10,6 +10,7 @@ import azhukov.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -98,7 +99,14 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   @Transactional(readOnly = true)
   public azhukov.model.Position getPositionById(Long id) {
     log.debug("Getting position by id: {}", id);
-    Position position = findByIdOrThrow(id);
+    Position position =
+        repository
+            .findByIdWithTopicsAndTeam(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
+
+    // Загружаем team отдельно, так как нельзя загружать несколько List одновременно
+    Hibernate.initialize(position.getTeam());
+
     return positionMapper.toDto(position);
   }
 

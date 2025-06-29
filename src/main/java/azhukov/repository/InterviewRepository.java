@@ -63,6 +63,11 @@ public interface InterviewRepository extends BaseRepository<Interview, Long> {
   @Query("SELECT i FROM Interview i WHERE i.status = 'FINISHED' AND i.result IS NULL")
   List<Interview> findByStatusAndResultIsNull(Interview.Status status);
 
+  /** Находит завершенные собеседования без результата с загруженными ответами (для оценки) */
+  @Query(
+      "SELECT DISTINCT i FROM Interview i LEFT JOIN FETCH i.answers WHERE i.status = 'FINISHED' AND i.result IS NULL")
+  List<Interview> findByStatusAndResultIsNullWithAnswers(Interview.Status status);
+
   /** Находит успешные собеседования */
   @Query("SELECT i FROM Interview i WHERE i.result = 'SUCCESSFUL'")
   List<Interview> findSuccessfulInterviews();

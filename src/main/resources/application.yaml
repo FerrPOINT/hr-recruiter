@@ -177,8 +177,15 @@ app:
     transcription:
       whisper:
         url: http://localhost:9000
-        timeout: 30000
-        model: small
+        timeout: 60000 # Увеличиваем timeout для больших файлов
+        retry-attempts: 3
+        supported-formats: mp3,wav,m4a,ogg,flac,aac
+        language: ru # Явно указываем русский язык
+        model: medium # Используем более качественную модель для лучшего распознавания русского
+        # Дополнительные параметры для улучшения качества
+        word-timestamps: true # Включаем временные метки слов
+        condition-on-previous-text: false # Не используем предыдущий контекст
+        temperature: 0.0 # Нулевая температура для более точного распознавания
 
 # Management Endpoints
 management:

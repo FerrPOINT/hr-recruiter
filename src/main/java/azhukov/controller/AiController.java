@@ -4,6 +4,8 @@ import azhukov.api.AiApi;
 import azhukov.mapper.AiOpenApiMapper;
 import azhukov.mapper.PositionMapper;
 import azhukov.model.GenerateQuestionsRequest;
+import azhukov.model.PositionAiGenerationRequest;
+import azhukov.model.PositionAiGenerationResponse;
 import azhukov.model.PositionDataGenerationRequest;
 import azhukov.model.PositionDataGenerationResponse;
 import azhukov.model.Question;
@@ -17,20 +19,15 @@ import azhukov.service.ai.AIService;
 import azhukov.service.ai.openrouter.OpenRouterService;
 import azhukov.util.EnumUtils;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Контроллер для AI-функциональности Реализует интерфейс AiApi, сгенерированный по OpenAPI
- * спецификации
- */
+/** Контроллер для AI-функциональности */
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -89,127 +86,9 @@ public class AiController implements AiApi {
   }
 
   @Override
-  public ResponseEntity<TranscribeAudio200Response> transcribeAudio(MultipartFile audio) {
-    try {
-      String transcription = whisperService.processAudioFile(audio);
-      TranscribeAudio200Response response = new TranscribeAudio200Response();
-      response.setTranscript(transcription);
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("Error in transcribe endpoint", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  @Override
-  public ResponseEntity<TranscribeAnswerWithAI200Response> transcribeAnswerWithAI(
-      MultipartFile audioFile, Long interviewId, Long questionId) {
-    try {
-      log.info(
-          "Processing audio transcription for interview ID: {} question ID: {}, file: {} ({} bytes)",
-          interviewId,
-          questionId,
-          audioFile.getOriginalFilename(),
-          audioFile.getSize());
-
-      // Обрабатываем аудио через пайплайн: Whisper -> Claude -> БД
-      // Создаем InterviewAnswer и сохраняем результат
-      Long interviewAnswerId =
-          transcriptionService.processAudioTranscription(audioFile, interviewId, questionId);
-
-      // Получаем отформатированный текст из созданного ответа
-      String formattedText = transcriptionService.getFormattedTranscription(interviewAnswerId);
-
-      // Формируем ответ используя сгенерированную модель из OpenAPI
-      TranscribeAnswerWithAI200Response response = new TranscribeAnswerWithAI200Response();
-      response.setSuccess(true);
-      response.setFormattedText(formattedText);
-      response.setInterviewAnswerId(interviewAnswerId);
-
-      log.info(
-          "Audio transcription completed successfully for interview ID: {}, question ID: {}, created answer ID: {}",
-          interviewId,
-          questionId,
-          interviewAnswerId);
-      return ResponseEntity.ok(response);
-
-    } catch (IllegalArgumentException e) {
-      log.warn("Invalid request parameters: {}", e.getMessage());
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-    } catch (RuntimeException e) {
-      if (e.getMessage() != null && e.getMessage().contains("not found")) {
-        log.warn(
-            "Interview or question not found: interviewId={}, questionId={}",
-            interviewId,
-            questionId);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-      }
-      log.error("Error in transcribeAnswerWithAI endpoint", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /**
-   * Диагностический endpoint для тестирования передачи аудио файлов POST
-   * /api/v1/ai/test-audio-upload
-   */
-  @PostMapping("/test-audio-upload")
-  public ResponseEntity<Map<String, Object>> testAudioUpload(
-      @RequestParam("file") MultipartFile file) {
-    Map<String, Object> response = new HashMap<>();
-
-    try {
-      log.info(
-          "Testing audio file upload: {} ({} bytes, {})",
-          file.getOriginalFilename(),
-          file.getSize(),
-          file.getContentType());
-
-      // Проверяем файл
-      if (file.isEmpty()) {
-        response.put("success", false);
-        response.put("error", "File is empty");
-        return ResponseEntity.badRequest().body(response);
-      }
-
-      // Проверяем тип файла
-      String contentType = file.getContentType();
-      if (contentType == null || !contentType.startsWith("audio/")) {
-        response.put("success", false);
-        response.put("error", "Invalid file type: " + contentType);
-        return ResponseEntity.badRequest().body(response);
-      }
-
-      // Проверяем размер файла
-      if (file.getSize() > 50 * 1024 * 1024) {
-        response.put("success", false);
-        response.put("error", "File too large: " + file.getSize() + " bytes");
-        return ResponseEntity.badRequest().body(response);
-      }
-
-      response.put("success", true);
-      response.put("filename", file.getOriginalFilename());
-      response.put("size", file.getSize());
-      response.put("contentType", contentType);
-      response.put("message", "Audio file received successfully");
-
-      return ResponseEntity.ok(response);
-
-    } catch (Exception e) {
-      log.error("Error in test audio upload", e);
-      response.put("success", false);
-      response.put("error", e.getMessage());
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
-  }
-
-  /**
-   * Генерирует вакансию на основе описания пользователя. Если описание содержит мало информации или
-   * бессмыслицу, генерирует хотя бы название вакансии.
-   */
-  @PostMapping("/generate-position")
-  public ResponseEntity<azhukov.model.PositionAiGenerationResponse> generatePosition(
-      @RequestBody azhukov.model.PositionAiGenerationRequest request) {
+  public ResponseEntity<PositionAiGenerationResponse> generatePosition(
+      PositionAiGenerationRequest request) {
+    log.info("Запрос на генерацию вакансии для описания: {}", request.getDescription());
     try {
       String description = request.getDescription();
       Long questionsCount = request.getQuestionsCount() != null ? request.getQuestionsCount() : 5L;
@@ -218,12 +97,6 @@ public class AiController implements AiApi {
       if (description == null || description.trim().isEmpty()) {
         return ResponseEntity.badRequest().build();
       }
-
-      log.info(
-          "Generating position from description: {}, questionsCount: {}, questionType: {}",
-          description.substring(0, Math.min(100, description.length())),
-          questionsCount,
-          questionType);
 
       // Генерируем вакансию через AI
       azhukov.service.ai.openrouter.dto.PositionGenerationResponse aiResponse =
@@ -262,8 +135,97 @@ public class AiController implements AiApi {
 
       return ResponseEntity.ok(response);
 
+    } catch (RuntimeException e) {
+      if (e.getMessage() != null && e.getMessage().contains("AI сервис недоступен")) {
+        log.warn("AI сервис недоступен");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+      }
+      log.error("Ошибка при генерации вакансии", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @Override
+  public ResponseEntity<TranscribeAudio200Response> transcribeAudio(MultipartFile audio) {
+    try {
+      String transcription = whisperService.processAudioFile(audio);
+      TranscribeAudio200Response response = new TranscribeAudio200Response();
+      response.setTranscript(transcription);
+      return ResponseEntity.ok(response);
     } catch (Exception e) {
-      log.error("Error generating position", e);
+      log.error("Error in transcribe endpoint", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  @Override
+  public ResponseEntity<TranscribeAnswerWithAI200Response> transcribeAnswerWithAI(
+      MultipartFile audioFile, Long interviewId, Long questionId) {
+    try {
+      log.info(
+          "Processing audio transcription for interview ID: {} question ID: {}, file: {} ({} bytes)",
+          interviewId,
+          questionId,
+          audioFile.getOriginalFilename(),
+          audioFile.getSize());
+      Long interviewAnswerId =
+          transcriptionService.processAudioTranscription(audioFile, interviewId, questionId);
+      String formattedText = transcriptionService.getFormattedTranscription(interviewAnswerId);
+      TranscribeAnswerWithAI200Response response = new TranscribeAnswerWithAI200Response();
+      response.setSuccess(true);
+      response.setFormattedText(formattedText);
+      response.setInterviewAnswerId(interviewAnswerId);
+      log.info(
+          "Audio transcription completed successfully for interview ID: {}, question ID: {}, created answer ID: {}",
+          interviewId,
+          questionId,
+          interviewAnswerId);
+      return ResponseEntity.ok(response);
+    } catch (IllegalArgumentException e) {
+      log.warn("Invalid request parameters: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+    } catch (RuntimeException e) {
+      if (e.getMessage() != null && e.getMessage().contains("not found")) {
+        log.warn(
+            "Interview or question not found: interviewId={}, questionId={}",
+            interviewId,
+            questionId);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+      }
+      log.error("Error in transcribeAnswerWithAI endpoint", e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    }
+  }
+
+  /**
+   * Транскрибирует аудио ответ на интервью БЕЗ форматирования Claude (только Whisper) Для отладки и
+   * сравнения качества транскрибации
+   */
+  public ResponseEntity<TranscribeAudio200Response> transcribeAnswerRaw(
+      MultipartFile audioFile, Long interviewId, Long questionId) {
+    try {
+      log.info(
+          "Processing RAW audio transcription for interview ID: {} question ID: {}, file: {} ({} bytes)",
+          interviewId,
+          questionId,
+          audioFile.getOriginalFilename(),
+          audioFile.getSize());
+
+      // Используем только Whisper без Claude форматирования
+      String rawTranscription = whisperService.transcribeAudio(audioFile);
+
+      TranscribeAudio200Response response = new TranscribeAudio200Response();
+      response.setTranscript(rawTranscription);
+
+      log.info(
+          "RAW audio transcription completed for interview ID: {}, question ID: {}, length: {} chars",
+          interviewId,
+          questionId,
+          rawTranscription.length());
+
+      return ResponseEntity.ok(response);
+    } catch (Exception e) {
+      log.error("Error in transcribeAnswerRaw endpoint", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }

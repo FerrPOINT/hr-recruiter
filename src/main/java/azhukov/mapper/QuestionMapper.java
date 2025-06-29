@@ -8,7 +8,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.mapstruct.*;
-import org.springframework.data.domain.Page;
 
 /**
  * Маппер для преобразования между Question entity и DTO. Использует MapStruct для автоматической
@@ -73,23 +72,13 @@ public interface QuestionMapper extends CommonMapper {
   @Mapping(target = "updatedAt", ignore = true)
   void updateEntityFromRequest(BaseQuestionFields entity, @MappingTarget Question question);
 
-  /** Преобразует список Question в список QuestionDto */
-  List<azhukov.model.Question> toDtoList(List<Question> entities);
-
-  /** Преобразует Page<Question> в GetAllQuestions200Response */
-  default azhukov.model.GetAllQuestions200Response toGetAllQuestionsResponse(Page<Question> page) {
-    if (page == null) return null;
-
-    azhukov.model.GetAllQuestions200Response response =
-        new azhukov.model.GetAllQuestions200Response();
-    response.setContent(toDtoList(page.getContent()));
-    response.setTotalElements((long) page.getTotalElements());
-    response.setTotalPages((long) page.getTotalPages());
-    response.setSize((long) page.getSize());
-    response.setNumber((long) page.getNumber());
-
-    return response;
-  }
+  /**
+   * Преобразует список сущностей в список DTO.
+   *
+   * @param questions Список сущностей
+   * @return Список DTO
+   */
+  List<azhukov.model.Question> toDtoList(List<Question> questions);
 
   /** Преобразует Position в PositionQuestionsResponseInterviewSettings */
   @Mapping(
