@@ -1,12 +1,12 @@
 package azhukov.controller;
 
 import azhukov.api.TeamUsersApi;
+import azhukov.entity.UserEntity;
 import azhukov.exception.ResourceNotFoundException;
 import azhukov.mapper.UserMapper;
-import azhukov.model.BaseUserFields;
-import azhukov.model.User;
-import azhukov.model.UserCreateRequest;
+import azhukov.model.*;
 import azhukov.service.UserService;
+import azhukov.util.PaginationUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -30,9 +31,9 @@ import org.springframework.web.bind.annotation.*;
  * Контроллер для управления пользователями и командой Реализует интерфейс TeamUsersApi,
  * сгенерированный по OpenAPI спецификации
  */
-@Slf4j
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Team & Users", description = "Управление командой и пользователями")
 public class UsersApiController implements TeamUsersApi {
 
@@ -40,14 +41,23 @@ public class UsersApiController implements TeamUsersApi {
   private final UserMapper userMapper;
 
   @Override
-  public ResponseEntity<List<User>> listUsers() {
-    log.debug("Getting all users");
+  public ResponseEntity<PaginatedResponse> listUsers(
+      Optional<Long> page, Optional<Long> size, Optional<String> sort) {
+    log.debug("Getting users with page={}, size={}, sort={}", page, size, sort);
 
-    // Получаем первую страницу со всеми пользователями
-    Page<User> usersPage = userService.findAllUsers(PageRequest.of(0, Integer.MAX_VALUE));
-    List<User> users = usersPage.getContent();
+    long pageNum = page.orElse(0L);
+    long pageSize = size.orElse(20L);
+    String sortField = sort.orElse("createdAt");
 
-    return ResponseEntity.ok(users);
+    Pageable pageable =
+        PageRequest.of((int) pageNum, (int) pageSize, Sort.by(Sort.Direction.DESC, sortField));
+
+    Page<User> usersPage = userService.findAllUsers(pageable);
+
+    PaginatedResponse response = new PaginatedResponse();
+    PaginationUtils.fillPaginationFields(usersPage, response);
+
+    return ResponseEntity.ok(response);
   }
 
   @Override
@@ -89,7 +99,7 @@ public class UsersApiController implements TeamUsersApi {
     log.debug("Getting team information");
 
     // Получаем всех активных пользователей как команду
-    List<User> team = userService.findUsersByRole(azhukov.entity.UserEntity.Role.RECRUITER);
+    List<User> team = userService.findUsersByRole(UserEntity.Role.RECRUITER);
     return ResponseEntity.ok(team);
   }
 
@@ -178,8 +188,7 @@ public class UsersApiController implements TeamUsersApi {
     log.debug("Getting users by role: {}", role);
 
     // Преобразуем строку в enum
-    azhukov.entity.UserEntity.Role userRole =
-        azhukov.entity.UserEntity.Role.valueOf(role.toUpperCase());
+    UserEntity.Role userRole = UserEntity.Role.valueOf(role.toUpperCase());
     List<User> users = userService.findUsersByRole(userRole);
     return ResponseEntity.ok(users);
   }

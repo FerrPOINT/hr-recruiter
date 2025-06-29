@@ -114,4 +114,42 @@ public class QuestionService extends BaseService<Question, Long, QuestionReposit
     Question question = findByIdOrThrow(id);
     repository.delete(question);
   }
+
+  @Transactional(readOnly = true)
+  public List<Question> getPositionQuestions(Long positionId) {
+    Position position =
+        positionRepository
+            .findById(positionId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+    return repository.findByPositionOrderByOrderAsc(position);
+  }
+
+  /** Возвращает вопросы по вакансии в формате PositionQuestionsResponse (без настроек) */
+  public azhukov.model.PositionQuestionsResponse getPositionQuestionsResponse(Long positionId) {
+    List<azhukov.model.Question> questions = getQuestionsByPosition(positionId);
+    azhukov.model.PositionQuestionsResponse response =
+        new azhukov.model.PositionQuestionsResponse();
+    response.setQuestions(questions);
+    // Можно не заполнять interviewSettings, если не требуется
+    return response;
+  }
+
+  /** Возвращает вопросы по вакансии с настройками интервью */
+  public azhukov.model.PositionQuestionsResponse getPositionQuestionsResponseWithSettings(
+      Long positionId) {
+    Position position =
+        positionRepository
+            .findById(positionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Position not found: " + positionId));
+    List<azhukov.model.Question> questions = getQuestionsByPosition(positionId);
+    azhukov.model.PositionQuestionsResponse response =
+        new azhukov.model.PositionQuestionsResponse();
+    response.setQuestions(questions);
+    // Используем маппер для настройки интервью
+    azhukov.model.PositionQuestionsResponseInterviewSettings settings =
+        questionMapper.toInterviewSettings(position);
+    response.setInterviewSettings(settings);
+    return response;
+  }
 }

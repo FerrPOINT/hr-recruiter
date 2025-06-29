@@ -51,9 +51,6 @@ public class InterviewAnswer {
   @Column(name = "video_url")
   private String videoUrl;
 
-  @Column(name = "transcript", columnDefinition = "TEXT")
-  private String transcript;
-
   @Column(name = "raw_transcription", columnDefinition = "TEXT")
   private String rawTranscription; // Сырой транскрибированный текст от Whisper
 
@@ -62,6 +59,9 @@ public class InterviewAnswer {
 
   @Column(name = "score")
   private Double score; // Оценка от 0 до 100
+
+  @Column(name = "score_justification", columnDefinition = "TEXT")
+  private String scoreJustification; // Обоснование оценки
 
   @Column(name = "feedback", columnDefinition = "TEXT")
   private String feedback;
@@ -82,15 +82,15 @@ public class InterviewAnswer {
   }
 
   /** Устанавливает аудио ответ */
-  public void setAudioAnswer(String audioUrl, String transcript) {
+  public void setAudioAnswer(String audioUrl, String rawTranscription) {
     this.audioUrl = audioUrl;
-    this.transcript = transcript;
+    this.rawTranscription = rawTranscription;
   }
 
   /** Устанавливает видео ответ */
-  public void setVideoAnswer(String videoUrl, String transcript) {
+  public void setVideoAnswer(String videoUrl, String rawTranscription) {
     this.videoUrl = videoUrl;
-    this.transcript = transcript;
+    this.rawTranscription = rawTranscription;
   }
 
   /** Устанавливает оценку ответа */

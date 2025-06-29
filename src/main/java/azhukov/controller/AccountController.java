@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
  * Контроллер для управления аккаунтом текущего пользователя Реализует интерфейс AccountApi,
  * сгенерированный по OpenAPI спецификации
  */
-@Slf4j
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 public class AccountController implements AccountApi {
 
   private final UserService userService;
@@ -57,8 +57,7 @@ public class AccountController implements AccountApi {
 
     // Создаем ответ с дополнительной информацией
     GetUserInfo200Response response = new GetUserInfo200Response();
-    response.setPhone(""); // TODO: Добавить поле phone в UserEntity
-    response.setPreferences("{}"); // TODO: Добавить поле preferences в UserEntity
+    response.setPhone(user.getPhone() != null ? user.getPhone() : "");
 
     return ResponseEntity.ok(response);
   }

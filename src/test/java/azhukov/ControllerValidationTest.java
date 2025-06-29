@@ -11,8 +11,8 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
- * Тест для проверки корректности контроллеров. Убеждается, что все методы в контроллерах помечены
- * как @Override, так как они должны реализовывать интерфейсы из OpenAPI.
+ * Тест для проверки корректности контроллеров. Все контроллеры должны реализовывать интерфейс *Api
+ * и помечать публичные методы как @Override.
  */
 public class ControllerValidationTest {
 
@@ -23,7 +23,6 @@ public class ControllerValidationTest {
     Path sourceDir = Paths.get("src/main/java");
     List<String> issues = new ArrayList<>();
 
-    // Ищем все Java файлы с "Controller" в названии
     Files.walk(sourceDir)
         .filter(path -> path.toString().endsWith(".java"))
         .filter(path -> path.getFileName().toString().contains("Controller"))
@@ -77,12 +76,8 @@ public class ControllerValidationTest {
         int lineNumber = findLineNumber(content, methodMatcher.start());
         String methodName = methodMatcher.group(1);
 
-        // Пропускаем конструкторы и служебные методы
-        if (methodName.equals(file.getFileName().toString().replace(".java", ""))
-            || methodName.equals("main")
-            || methodName.equals("checkControllers")
-            || methodName.equals("checkController")
-            || methodName.equals("findLineNumber")) {
+        // Пропускаем только конструктор
+        if (methodName.equals(file.getFileName().toString().replace(".java", ""))) {
           continue;
         }
 

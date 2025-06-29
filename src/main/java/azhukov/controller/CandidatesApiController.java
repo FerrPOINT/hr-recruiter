@@ -4,10 +4,15 @@ import azhukov.api.CandidatesApi;
 import azhukov.model.Candidate;
 import azhukov.model.CandidateCreateRequest;
 import azhukov.model.CandidateUpdateRequest;
+import azhukov.model.PaginatedResponse;
 import azhukov.service.CandidateService;
+import azhukov.util.PaginationUtils;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +55,34 @@ public class CandidatesApiController implements CandidatesApi {
     log.info("Getting candidates for position: {}", positionId);
     List<Candidate> candidates = candidateService.getCandidatesByPosition(positionId);
     return ResponseEntity.ok(candidates);
+  }
+
+  @Override
+  public ResponseEntity<PaginatedResponse> listCandidates(
+      Optional<Long> positionId,
+      Optional<String> search,
+      Optional<Long> page,
+      Optional<Long> size,
+      Optional<String> sort) {
+    log.debug(
+        "Getting candidates with positionId={}, search={}, page={}, size={}, sort={}",
+        positionId,
+        search,
+        page,
+        size,
+        sort);
+
+    Long pageNum = page.orElse(0L);
+    Long pageSize = size.orElse(20L);
+    Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
+
+    Page<Candidate> candidates =
+        candidateService.getCandidatesPage(positionId.orElse(null), search.orElse(null), pageable);
+
+    PaginatedResponse response = new PaginatedResponse();
+    PaginationUtils.fillPaginationFields(candidates, response);
+
+    return ResponseEntity.ok(response);
   }
 
   @Override

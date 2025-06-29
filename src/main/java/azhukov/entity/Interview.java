@@ -61,15 +61,6 @@ public class Interview {
   @Column(name = "ai_score")
   private Double aiScore; // Оценка от 0 до 100
 
-  @Column(name = "transcript", columnDefinition = "TEXT")
-  private String transcript;
-
-  @Column(name = "audio_url")
-  private String audioUrl;
-
-  @Column(name = "video_url")
-  private String videoUrl;
-
   @Column(name = "notes", columnDefinition = "TEXT")
   private String notes;
 

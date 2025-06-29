@@ -22,7 +22,6 @@ public interface InterviewAnswerMapper {
   @Mapping(target = "questionId", source = "question.id")
   @Mapping(target = "answerText", source = "answerText")
   @Mapping(target = "audioUrl", source = "audioUrl")
-  @Mapping(target = "transcript", source = "transcript")
   @Mapping(target = "createdAt", qualifiedByName = "answerLocalDateTimeToOffsetDateTime")
   azhukov.model.InterviewAnswer toDto(InterviewAnswer interviewAnswer);
 
@@ -32,7 +31,6 @@ public interface InterviewAnswerMapper {
   @Mapping(target = "question", ignore = true) // Устанавливается в сервисе
   @Mapping(target = "answerText", source = "answerText")
   @Mapping(target = "audioUrl", source = "audioUrl")
-  @Mapping(target = "transcript", source = "transcript")
   @Mapping(target = "createdAt", ignore = true)
   InterviewAnswer toEntity(azhukov.model.InterviewAnswerCreateRequest request);
 

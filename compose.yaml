@@ -6,6 +6,7 @@
 # - PostgreSQL: основная база данных
 # - Redis: кэширование и сессии
 # - Spring Boot App: основное приложение
+# - Whisper: транскрибация аудио
 # - Nginx: обратный прокси (опционально)
 # - Prometheus + Grafana: мониторинг (опционально)
 #
@@ -67,15 +68,60 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # =============================================================================
+  # Redis - Кэширование и сессии
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: hr-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # =============================================================================
+  # Whisper - Транскрибация аудио
+  # =============================================================================
   whisper:
-    image: ghcr.io/ggerganov/whisper.cpp:latest
+    image: onerahmet/openai-whisper-asr-webservice:latest
     container_name: hr-whisper
     restart: unless-stopped
     ports:
       - "9000:9000"
+    environment:
+      - ASR_ENGINE=openai_whisper
+      - ASR_MODEL=tiny
+      - ASR_DEVICE=cpu
+
+  # =============================================================================
+  # Spring Boot Application
+  # =============================================================================
+  app:
+    build: .
+    container_name: hr-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/hr_recruiter
+      - SPRING_DATASOURCE_USERNAME=hr_user
+      - SPRING_DATASOURCE_PASSWORD=hr_password
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - APP_AI_TRANSCRIPTION_WHISPER_URL=http://whisper:9000
+    depends_on:
+      - postgres
+      - redis
+      - whisper
+    volumes:
+      - ./logs:/app/logs
 
 volumes:
   pgdata:
+  redisdata:
 
 # =============================================================================
 # Networks - Сетевая изоляция

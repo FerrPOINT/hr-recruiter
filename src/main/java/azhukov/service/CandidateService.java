@@ -40,6 +40,45 @@ public class CandidateService {
     return candidateMapper.toDtoList(candidates);
   }
 
+  /** Получает кандидатов с пагинацией и фильтрацией */
+  @Transactional(readOnly = true)
+  public Page<azhukov.model.Candidate> getCandidatesPage(
+      Long positionId, String search, Pageable pageable) {
+    log.debug(
+        "Getting candidates page with positionId={}, search={}, pageable={}",
+        positionId,
+        search,
+        pageable);
+
+    Page<Candidate> candidates;
+
+    if (positionId != null && search != null && !search.trim().isEmpty()) {
+      // Фильтр по вакансии и поиск - используем только фильтр по вакансии для простоты
+      Position position =
+          positionRepository
+              .findById(positionId)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Position not found: " + positionId));
+      candidates = candidateRepository.findByPosition(position, pageable);
+    } else if (positionId != null) {
+      // Только фильтр по вакансии
+      Position position =
+          positionRepository
+              .findById(positionId)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Position not found: " + positionId));
+      candidates = candidateRepository.findByPosition(position, pageable);
+    } else if (search != null && !search.trim().isEmpty()) {
+      // Только поиск
+      candidates = candidateRepository.findBySearchTerm(search, pageable);
+    } else {
+      // Без фильтров
+      candidates = candidateRepository.findAll(pageable);
+    }
+
+    return candidates.map(candidateMapper::toDto);
+  }
+
   /** Создает нового кандидата для вакансии */
   @Transactional
   public azhukov.model.Candidate createCandidate(

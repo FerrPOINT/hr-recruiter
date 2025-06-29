@@ -23,13 +23,31 @@ public class ApplicationProperties {
   private Anthropic anthropic = new Anthropic();
   private OpenAi openai = new OpenAi();
 
+  // Константы для магических чисел
+  public static final class Constants {
+    public static final double DEFAULT_MIN_SCORE = 6.0;
+    public static final int DEFAULT_ANSWER_TIME = 150;
+    public static final int DEFAULT_QUESTIONS_COUNT = 5;
+    public static final int DEFAULT_MAX_TOKENS = 1000;
+    public static final double DEFAULT_TEMPERATURE = 0.7;
+    public static final int DEFAULT_TIMEOUT_MS = 30000;
+    public static final int DEFAULT_MAX_RETRIES = 3;
+    public static final int DEFAULT_RETRY_DELAY_MS = 1000;
+    public static final int DEFAULT_CACHE_SIZE = 1000;
+    public static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int MAX_PAGE_SIZE = 100;
+    public static final String DEFAULT_LANGUAGE = "Русский";
+    public static final String DEFAULT_QUESTION_TYPE = "В основном хард-скиллы";
+    public static final String DEFAULT_CHECK_TYPE = "Автоматическая проверка";
+  }
+
   @Data
   public static class Security {
     private Jwt jwt = new Jwt();
 
     @Data
     public static class Jwt {
-      private String secret = "your-secret-key-here-make-it-long-and-secure";
+      private String secret = "${JWT_SECRET:your-secret-key-here-make-it-long-and-secure}";
       private Duration expiration = Duration.ofHours(24);
     }
   }
@@ -38,14 +56,23 @@ public class ApplicationProperties {
   public static class Cors {
     private List<String> allowedOrigins = List.of("http://localhost:3000", "http://localhost:8080");
     private List<String> allowedMethods = List.of("GET", "POST", "PUT", "DELETE", "OPTIONS");
-    private List<String> allowedHeaders = List.of("*");
+    private List<String> allowedHeaders =
+        List.of(
+            "*",
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Accept",
+            "Origin",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers");
     private boolean allowCredentials = true;
   }
 
   @Data
   public static class Pagination {
-    private int defaultPageSize = 20;
-    private int maxPageSize = 100;
+    private int defaultPageSize = Constants.DEFAULT_PAGE_SIZE;
+    private int maxPageSize = Constants.MAX_PAGE_SIZE;
   }
 
   @Data
@@ -73,7 +100,7 @@ public class ApplicationProperties {
 
       @Data
       public static class Whisper {
-        private String url = "http://localhost:9000";
+        private String url = "${WHISPER_URL:http://localhost:9000}";
         private String modelSize = "base";
         private Duration timeout = Duration.ofSeconds(30);
         private int retryAttempts = 3;
@@ -83,17 +110,17 @@ public class ApplicationProperties {
 
   @Data
   public static class Anthropic {
-    private String apiKey;
+    private String apiKey = "${ANTHROPIC_API_KEY:}";
     private String model = "claude-3-sonnet-20240229";
-    private int maxTokens = 1000;
-    private double temperature = 0.7;
+    private int maxTokens = Constants.DEFAULT_MAX_TOKENS;
+    private double temperature = Constants.DEFAULT_TEMPERATURE;
   }
 
   @Data
   public static class OpenAi {
-    private String apiKey;
+    private String apiKey = "${OPENAI_API_KEY:}";
     private String model = "gpt-4";
-    private int maxTokens = 1000;
-    private double temperature = 0.7;
+    private int maxTokens = Constants.DEFAULT_MAX_TOKENS;
+    private double temperature = Constants.DEFAULT_TEMPERATURE;
   }
 }

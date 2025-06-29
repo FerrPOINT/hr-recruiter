@@ -4,11 +4,11 @@ import azhukov.api.PositionsApi;
 import azhukov.mapper.PositionMapper;
 import azhukov.model.*;
 import azhukov.service.PositionService;
+import azhukov.util.PaginationUtils;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -71,10 +71,9 @@ public class PositionsApiController implements PositionsApi {
   }
 
   @Override
-  public ResponseEntity<GetPositionPublicLink200Response> getPositionPublicLink(String id) {
+  public ResponseEntity<GetPositionPublicLink200Response> getPositionPublicLink(Long id) {
     log.debug("Getting public link for position with id: {}", id);
-    Long longId = Long.parseLong(id);
-    String publicLink = positionService.getPositionPublicLink(longId);
+    String publicLink = positionService.getPositionPublicLink(id);
     GetPositionPublicLink200Response response = new GetPositionPublicLink200Response();
     response.setPublicLink(publicLink);
     return ResponseEntity.ok(response);
@@ -84,34 +83,36 @@ public class PositionsApiController implements PositionsApi {
   public ResponseEntity<PositionStats> getPositionStats(Long id) {
     log.debug("Getting stats for position with id: {}", id);
 
-    PositionStats stats = positionService.getPositionStats(id);
+    azhukov.entity.Position position = positionService.getPositionStats(id);
+    PositionStats stats = positionMapper.calculatePositionStats(position);
 
     return ResponseEntity.ok(stats);
   }
 
   @Override
-  public ResponseEntity<ListPositions200Response> listPositions(
+  public ResponseEntity<PaginatedResponse> listPositions(
       Optional<PositionStatusEnum> status,
       Optional<String> search,
       Optional<Long> page,
-      Optional<Long> size) {
+      Optional<Long> size,
+      Optional<String> sort) {
     log.debug(
-        "Getting positions with status={}, search={}, page={}, size={}",
+        "Getting positions with status={}, search={}, page={}, size={}, sort={}",
         status,
         search,
         page,
-        size);
+        size,
+        sort);
 
-    long pageNum = page.orElse(1L);
-    long pageSize = size.orElse(20L);
-    Pageable pageable = PageRequest.of((int) (pageNum - 1), (int) pageSize);
+    Long pageNum = page.orElse(0L);
+    Long pageSize = size.orElse(20L);
+    Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
 
     Page<Position> positions =
         positionService.getPositionsPage(status.orElse(null), search.orElse(null), pageable);
 
-    ListPositions200Response response = new ListPositions200Response();
-    response.setItems(positions.getContent());
-    response.setTotal((long) positions.getTotalElements());
+    PaginatedResponse response = new PaginatedResponse();
+    PaginationUtils.fillPaginationFields(positions, response);
 
     return ResponseEntity.ok(response);
   }

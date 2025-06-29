@@ -44,43 +44,21 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             authz ->
                 authz
-                    // Публичные эндпоинты
-                    .requestMatchers("/api/auth/**")
+                    // Публичные эндпоинты (с учетом context-path /api/v1)
+                    .requestMatchers("/api/v1/auth/**")
                     .permitAll()
-                    .requestMatchers("/api/health/**")
+                    .requestMatchers("/api/v1/actuator/**")
                     .permitAll()
-                    .requestMatchers("/api/actuator/**")
+                    .requestMatchers("/actuator/**")
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
                     .requestMatchers("/h2-console/**")
                     .permitAll()
 
-                    // Эндпоинты для аутентифицированных пользователей
-                    .requestMatchers("/api/account/**")
+                    // Все API эндпоинты требуют аутентификации
+                    .requestMatchers("/**")
                     .authenticated()
-                    .requestMatchers("/api/positions/**")
-                    .authenticated()
-                    .requestMatchers("/api/candidates/**")
-                    .authenticated()
-                    .requestMatchers("/api/interviews/**")
-                    .authenticated()
-                    .requestMatchers("/api/questions/**")
-                    .authenticated()
-                    .requestMatchers("/api/ai/**")
-                    .authenticated()
-                    .requestMatchers("/api/stats/**")
-                    .authenticated()
-                    .requestMatchers("/api/reports/**")
-                    .authenticated()
-
-                    // Эндпоинты только для администраторов
-                    .requestMatchers("/api/users/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/tariffs/**")
-                    .hasRole("ADMIN")
-                    .requestMatchers("/api/branding/**")
-                    .hasRole("ADMIN")
 
                     // Все остальные запросы требуют аутентификации
                     .anyRequest()
@@ -120,6 +98,15 @@ public class SecurityConfig {
 
     // Максимальный возраст предварительного запроса
     configuration.setMaxAge(3600L);
+
+    // Дополнительные заголовки для multipart запросов
+    configuration.addAllowedHeader("Content-Type");
+    configuration.addAllowedHeader("Authorization");
+    configuration.addAllowedHeader("X-Requested-With");
+    configuration.addAllowedHeader("Accept");
+    configuration.addAllowedHeader("Origin");
+    configuration.addAllowedHeader("Access-Control-Request-Method");
+    configuration.addAllowedHeader("Access-Control-Request-Headers");
 
     // Настройка для всех путей
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

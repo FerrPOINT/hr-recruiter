@@ -1,29 +1,16 @@
 version: '3.8'
 
 services:
+  # Наследуем только базовые сервисы из главного compose.yaml
   postgres:
-    image: postgres:16-alpine
-    container_name: hr-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: hr_recruiter
-      POSTGRES_USER: hr_user
-      POSTGRES_PASSWORD: hr_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    extends:
+      file: compose.yaml
+      service: postgres
 
   whisper:
-    image: onerahmet/openai-whisper-asr-webservice:latest
-    container_name: hr-whisper
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-    environment:
-      - ASR_MODEL=small
-      - ASR_ENGINE=whisper
-      - ASR_DEVICE=cpu
+    extends:
+      file: compose.yaml
+      service: whisper
 
 volumes:
   pgdata: 

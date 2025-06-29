@@ -2,6 +2,16 @@ spring:
   application:
     name: hr-recruiter-backend
   
+  # Multipart Configuration для аудио файлов
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 50MB
+      file-size-threshold: 2KB
+      location: ${java.io.tmpdir}
+      resolve-lazily: false
+  
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/hr_recruiter
@@ -71,7 +81,7 @@ spring:
 server:
   port: 8080
   servlet:
-    context-path: /api
+    context-path: /api/v1
   compression:
     enabled: true
     mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
@@ -81,9 +91,12 @@ server:
 logging:
   level:
     azhukov: INFO
-    org.springframework.security: WARN
+    azhukov.config.LoggingConfig: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
     org.hibernate.SQL: WARN
     org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -116,8 +129,26 @@ anthropic:
   enable-request-logging: true
   enable-usage-metrics: true
 
+# OpenRouter AI Configuration (основной AI сервис)
+openrouter:
+  api:
+    key: sk-or-demo-key
+    url: https://openrouter.ai/api/v1/chat/completions
+  model: anthropic/claude-3.5-sonnet
+  max-tokens: 1000
+  temperature: 0.7
+  timeout: 30000
+  max-retries: 3
+  retry-delay: 1000
+  enable-prompt-caching: true
+  prompt-cache-size: 1000
+  enable-request-logging: true
+  enable-usage-metrics: true
+
 # Application Properties
 app:
+  debug:
+    enabled: false # Включить для логирования тела запросов
   cors:
     allowed-origins: http://localhost:3000,http://localhost:8080
     allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
@@ -141,6 +172,13 @@ app:
       user: 1800 # 30 minutes
       position: 7200 # 2 hours
       question: 7200 # 2 hours
+  
+  ai:
+    transcription:
+      whisper:
+        url: http://localhost:9000
+        timeout: 30000
+        model: small
 
 # Management Endpoints
 management:

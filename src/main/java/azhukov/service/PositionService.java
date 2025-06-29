@@ -230,6 +230,9 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   @Transactional
   public void softDeletePosition(Long id) {
     log.info("Soft deleting position: {}", id);
+    if (!repository.existsById(id)) {
+      throw new ResourceNotFoundException("Position not found with id: " + id);
+    }
     Position position = findByIdOrThrow(id);
     position.setStatus(Position.Status.ARCHIVED);
     repository.save(position);
@@ -286,17 +289,8 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
 
   /** Получает статистику по вакансии */
   @Transactional(readOnly = true)
-  public PositionStats getPositionStats(Long id) {
-    log.debug("Getting stats for position: {}", id);
-    Position position = findByIdOrThrow(id);
-
-    PositionStats stats = new PositionStats();
-    stats.setPositionId(id);
-    stats.setInterviewsTotal((long) repository.countInterviewsByPosition(id));
-    stats.setInterviewsSuccessful((long) repository.countSuccessfulInterviewsByPosition(id));
-    stats.setInterviewsInProgress((long) repository.countInProgressInterviewsByPosition(id));
-    stats.setInterviewsUnsuccessful((long) repository.countUnsuccessfulInterviewsByPosition(id));
-
-    return stats;
+  public Position getPositionStats(Long positionId) {
+    log.debug("Getting stats for position: {}", positionId);
+    return findByIdOrThrow(positionId);
   }
 }

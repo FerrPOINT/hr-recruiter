@@ -165,12 +165,11 @@ openApiGenerate {
         performBeanValidation: "true",
         generateApi: "true",
         generateModels: "true",
-        delegatePattern: "true",
+        delegatePattern: "false",
         useDefaultApiClient: "false",
         useDefaultApiClientAsHttpClient: "false",
         usePageable: "true",
-        usePrimitiveTypes: "true",
-        useOptional: "false"
+        usePrimitiveTypes: "true"
     ]
     typeMappings = [
         "integer": "Long",
@@ -221,4 +220,11 @@ tasks.withType(JavaCompile) {
         '-Amapstruct.defaultComponentModel=spring',
         '-Amapstruct.unmappedTargetPolicy=IGNORE'
     ]
+    dependsOn 'spotlessApply'
+}
+
+// Добавляем алиас для generateOpenApi
+task generateOpenApi {
+    dependsOn openApiGenerate
+    description = 'Generate OpenAPI models and interfaces'
 }

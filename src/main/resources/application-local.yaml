@@ -7,22 +7,46 @@ spring:
     username: hr_user
     password: hr_password
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  # Отключаем Redis кэширование
+  cache:
+    type: simple
   data:
     redis:
       host: localhost
       port: 6379
+      password: 
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 10
+        order_inserts: true
+        order_updates: true
   liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
   # Отключаем Redis для локальной разработки
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration
-      - org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration
   # Отключаем health checks для Redis и почты
   main:
     allow-bean-definition-overriding: true
@@ -34,9 +58,50 @@ management:
       enabled: false
     mail:
       enabled: false
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
 
-# AI Services Configuration
+# Server Configuration
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+# Logging Configuration for local development
+logging:
+  level:
+    azhukov: DEBUG
+    azhukov.config.LoggingConfig: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.cache: DEBUG
+    org.springframework.data.redis: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/hr-recruiter-local.log
+    max-size: 10MB
+    max-history: 7
+
+# Application Properties for local development
 app:
+  debug:
+    enabled: true # Включить подробное логирование для локальной разработки
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:8080
+    allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
   ai:
     transcription:
       whisper:
@@ -48,6 +113,25 @@ app:
       max-tokens: 4096
       temperature: 0.7
 
-logging:
-  level:
-    azhukov: DEBUG
+# Security Configuration for local development
+security:
+  jwt:
+    secret: local-development-secret-key-change-in-production
+    expiration: 86400000 # 24 hours in milliseconds
+  basic:
+    enabled: false # Отключаем basic auth для локальной разработки
+
+# Claude AI Configuration for local development
+anthropic:
+  api:
+    key: sk-demo-key
+    url: https://api.anthropic.com/v1/messages
+  model: claude-3-sonnet-20240229
+  max-tokens: 1000
+  temperature: 0.7
+  timeout: 30000
+  max-retries: 3
+  retry-delay: 1000
+  enable-prompt-caching: false
+  enable-request-logging: true
+  enable-usage-metrics: false

@@ -32,6 +32,17 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "avgScore", source = "avgScore")
   @Mapping(target = "team", source = "team")
   @Mapping(target = "candidates", ignore = true) // Игнорируем для избежания циклических ссылок
+  @Mapping(target = "language", source = "language")
+  @Mapping(target = "showOtherLang", source = "showOtherLang")
+  @Mapping(target = "answerTime", source = "answerTime")
+  @Mapping(target = "level", source = "level")
+  @Mapping(target = "saveAudio", source = "saveAudio")
+  @Mapping(target = "saveVideo", source = "saveVideo")
+  @Mapping(target = "randomOrder", source = "randomOrder")
+  @Mapping(target = "questionType", source = "questionType")
+  @Mapping(target = "questionsCount", source = "questionsCount")
+  @Mapping(target = "checkType", source = "checkType")
+  @Mapping(target = "stats", expression = "java(calculatePositionStats(entity))")
   azhukov.model.Position toDto(Position entity);
 
   /** Преобразует PositionCreateRequest в Position entity */
@@ -45,6 +56,16 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "interviews", ignore = true)
   @Mapping(target = "createdBy", ignore = true)
   @Mapping(target = "team", ignore = true) // Будет заполнено отдельно
+  @Mapping(target = "language", source = "language")
+  @Mapping(target = "showOtherLang", source = "showOtherLang")
+  @Mapping(target = "answerTime", source = "answerTime")
+  @Mapping(target = "level", source = "level")
+  @Mapping(target = "saveAudio", source = "saveAudio")
+  @Mapping(target = "saveVideo", source = "saveVideo")
+  @Mapping(target = "randomOrder", source = "randomOrder")
+  @Mapping(target = "questionType", source = "questionType")
+  @Mapping(target = "questionsCount", source = "questionsCount")
+  @Mapping(target = "checkType", source = "checkType")
   Position toEntity(PositionCreateRequest request);
 
   /** Обновляет Position entity из PositionUpdateRequest */
@@ -59,6 +80,16 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "interviews", ignore = true)
   @Mapping(target = "createdBy", ignore = true)
   @Mapping(target = "team", ignore = true) // Будет заполнено отдельно
+  @Mapping(target = "language", source = "language")
+  @Mapping(target = "showOtherLang", source = "showOtherLang")
+  @Mapping(target = "answerTime", source = "answerTime")
+  @Mapping(target = "level", source = "level")
+  @Mapping(target = "saveAudio", source = "saveAudio")
+  @Mapping(target = "saveVideo", source = "saveVideo")
+  @Mapping(target = "randomOrder", source = "randomOrder")
+  @Mapping(target = "questionType", source = "questionType")
+  @Mapping(target = "questionsCount", source = "questionsCount")
+  @Mapping(target = "checkType", source = "checkType")
   void updateEntityFromRequest(PositionUpdateRequest request, @MappingTarget Position entity);
 
   /** Преобразует список Position entity в список Position DTO */
@@ -82,9 +113,63 @@ public interface PositionMapper extends CommonMapper {
   @ValueMapping(source = "ARCHIVED", target = "ARCHIVED")
   Position.Status mapStatus(azhukov.model.PositionStatusEnum status);
 
+  /** Маппинг уровней позиции */
+  @ValueMapping(source = "JUNIOR", target = "JUNIOR")
+  @ValueMapping(source = "MIDDLE", target = "MIDDLE")
+  @ValueMapping(source = "SENIOR", target = "SENIOR")
+  @ValueMapping(source = "LEAD", target = "LEAD")
+  azhukov.model.PositionLevelEnum mapLevel(Position.Level level);
+
+  /** Обратный маппинг уровней позиции */
+  @ValueMapping(source = "JUNIOR", target = "JUNIOR")
+  @ValueMapping(source = "MIDDLE", target = "MIDDLE")
+  @ValueMapping(source = "SENIOR", target = "SENIOR")
+  @ValueMapping(source = "LEAD", target = "LEAD")
+  Position.Level mapLevel(azhukov.model.PositionLevelEnum level);
+
   /** Преобразование List<UUID> в List<UserEntity> (заглушка, будет заполнено в сервисе) */
   default List<UserEntity> mapTeam(List<UUID> teamIds) {
     return null; // Будет заполнено в сервисе через UserRepository
+  }
+
+  /** Вычисляет статистику позиции на основе интервью */
+  default azhukov.model.PositionStats calculatePositionStats(Position entity) {
+    if (entity == null || entity.getInterviews() == null) {
+      return null;
+    }
+
+    azhukov.model.PositionStats stats = new azhukov.model.PositionStats();
+    stats.setPositionId(entity.getId());
+
+    long total = entity.getInterviews().size();
+
+    // Успешные - результат SUCCESSFUL
+    long successful =
+        entity.getInterviews().stream()
+            .filter(
+                interview -> interview.getResult() == azhukov.entity.Interview.Result.SUCCESSFUL)
+            .count();
+
+    // В процессе - статус IN_PROGRESS
+    long inProgress =
+        entity.getInterviews().stream()
+            .filter(
+                interview -> interview.getStatus() == azhukov.entity.Interview.Status.IN_PROGRESS)
+            .count();
+
+    // Неуспешные - результат UNSUCCESSFUL
+    long unsuccessful =
+        entity.getInterviews().stream()
+            .filter(
+                interview -> interview.getResult() == azhukov.entity.Interview.Result.UNSUCCESSFUL)
+            .count();
+
+    stats.setInterviewsTotal(total);
+    stats.setInterviewsSuccessful(successful);
+    stats.setInterviewsInProgress(inProgress);
+    stats.setInterviewsUnsuccessful(unsuccessful);
+
+    return stats;
   }
 
   // Методы для работы с Map (для API совместимости)

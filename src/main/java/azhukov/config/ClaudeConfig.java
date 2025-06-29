@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 public class ClaudeConfig {
 
   /** API ключ для Claude */
-  private String apiKey = "sk-demo-key";
+  private String apiKey = "${ANTHROPIC_API_KEY:}";
 
   /** URL API Claude */
   private String apiUrl = "https://api.anthropic.com/v1/messages";
@@ -26,25 +26,25 @@ public class ClaudeConfig {
   private String model = "claude-3-sonnet-20240229";
 
   /** Максимальное количество токенов по умолчанию */
-  private Integer maxTokens = 1000;
+  private Integer maxTokens = ApplicationProperties.Constants.DEFAULT_MAX_TOKENS;
 
   /** Температура генерации по умолчанию (0.0 - 1.0) */
-  private Double temperature = 0.7;
+  private Double temperature = ApplicationProperties.Constants.DEFAULT_TEMPERATURE;
 
   /** Таймаут запроса в миллисекундах */
-  private Integer timeout = 30000;
+  private Integer timeout = ApplicationProperties.Constants.DEFAULT_TIMEOUT_MS;
 
   /** Максимальное количество повторных попыток */
-  private Integer maxRetries = 3;
+  private Integer maxRetries = ApplicationProperties.Constants.DEFAULT_MAX_RETRIES;
 
   /** Задержка между повторными попытками в миллисекундах */
-  private Integer retryDelay = 1000;
+  private Integer retryDelay = ApplicationProperties.Constants.DEFAULT_RETRY_DELAY_MS;
 
   /** Включить кэширование промптов */
   private Boolean enablePromptCaching = true;
 
   /** Размер кэша промптов */
-  private Integer promptCacheSize = 1000;
+  private Integer promptCacheSize = ApplicationProperties.Constants.DEFAULT_CACHE_SIZE;
 
   /** Включить логирование запросов */
   private Boolean enableRequestLogging = true;
@@ -58,7 +58,7 @@ public class ClaudeConfig {
    * @return true если ключ настроен
    */
   public boolean isApiKeyConfigured() {
-    return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("sk-demo-key");
+    return apiKey != null && !apiKey.isEmpty() && !apiKey.startsWith("${");
   }
 
   /**

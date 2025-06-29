@@ -7,6 +7,7 @@ import azhukov.service.ai.AIUsageStats;
 import azhukov.service.ai.claude.dto.ClaudeRequest;
 import azhukov.service.ai.claude.dto.ClaudeResponse;
 import azhukov.service.ai.claude.dto.ClaudeUsage;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +21,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -35,7 +33,6 @@ import org.springframework.web.client.RestTemplate;
  * @version 1.0
  */
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class ClaudeService implements AIService {
 
@@ -293,37 +290,31 @@ public class ClaudeService implements AIService {
    */
   private ClaudeResponse sendRequest(ClaudeRequest request) throws AIServiceException {
     try {
+      // Выводим сериализованный JSON запроса
+      ObjectMapper mapper = new ObjectMapper();
+      String jsonRequest = mapper.writeValueAsString(request);
+      System.out.println("Claude request JSON: " + jsonRequest);
+
       HttpHeaders headers = createHeaders();
       HttpEntity<ClaudeRequest> entity = new HttpEntity<>(request, headers);
-
-      log.debug("Sending request to Claude API: {}", request.getModel());
-
-      ResponseEntity<ClaudeResponse> response =
+      long start = System.currentTimeMillis();
+      ResponseEntity<ClaudeResponse> responseEntity =
           restTemplate.postForEntity(claudeConfig.getApiUrl(), entity, ClaudeResponse.class);
-
-      if (response.getStatusCode() != HttpStatus.OK) {
+      long end = System.currentTimeMillis();
+      log.info("Claude API response time: {} ms", (end - start));
+      if (responseEntity.getStatusCode() != HttpStatus.OK) {
         throw new AIServiceException(
-            String.format("Claude API returned status: %s", response.getStatusCode()),
-            AIServiceException.ErrorType.API_UNAVAILABLE,
-            SERVICE_NAME);
+            "Claude API returned non-OK status: " + responseEntity.getStatusCode(),
+            AIServiceException.ErrorType.INVALID_REQUEST,
+            "Claude AI");
       }
-
-      return response.getBody();
-
-    } catch (HttpClientErrorException e) {
-      log.error("Claude API client error: {}", e.getMessage());
-      throw new AIServiceException(
-          "Claude API client error", AIServiceException.ErrorType.INVALID_REQUEST, SERVICE_NAME);
-    } catch (HttpServerErrorException e) {
-      log.error("Claude API server error: {}", e.getMessage());
-      throw new AIServiceException(
-          "Claude API server error", AIServiceException.ErrorType.API_UNAVAILABLE, SERVICE_NAME);
+      return responseEntity.getBody();
     } catch (Exception e) {
-      log.error("Unexpected error during Claude API call", e);
-      throw new AIServiceException(
-          "Unexpected error during API call",
-          AIServiceException.ErrorType.UNKNOWN_ERROR,
-          SERVICE_NAME);
+      // Если это ошибка клиента, выводим тело ответа
+      if (e instanceof org.springframework.web.client.HttpClientErrorException clientEx) {
+        System.out.println("Claude API error body: " + clientEx.getResponseBodyAsString());
+      }
+      throw createAIServiceException("Claude API client error", e);
     }
   }
 

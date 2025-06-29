@@ -27,6 +27,10 @@ public interface InterviewMapper extends CommonMapper {
   @Mapping(source = "answers", target = "answers")
   @Mapping(source = "aiScore", target = "aiScore")
   @Mapping(
+      source = "createdAt",
+      target = "createdAt",
+      qualifiedByName = "interviewLocalDateTimeToOffsetDateTime")
+  @Mapping(
       source = "startedAt",
       target = "startedAt",
       qualifiedByName = "interviewLocalDateTimeToOffsetDateTime")

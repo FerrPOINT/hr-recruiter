@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -16,24 +17,39 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PositionRepository extends BaseRepository<Position, Long> {
 
+  /** Находит все вакансии с загрузкой интервью */
+  @Override
+  @EntityGraph(attributePaths = {"interviews"})
+  List<Position> findAll();
+
+  /** Находит все вакансии с пагинацией и загрузкой интервью */
+  @Override
+  @EntityGraph(attributePaths = {"interviews"})
+  Page<Position> findAll(Pageable pageable);
+
   /** Находит вакансии по статусу */
+  @EntityGraph(attributePaths = {"interviews"})
   List<Position> findByStatus(Position.Status status);
 
   /** Находит вакансии по статусу с пагинацией */
+  @EntityGraph(attributePaths = {"interviews"})
   Page<Position> findByStatus(Position.Status status, Pageable pageable);
 
   /** Находит вакансии по компании */
+  @EntityGraph(attributePaths = {"interviews"})
   List<Position> findByCompany(String company);
 
   /** Находит вакансии по создателю */
+  @EntityGraph(attributePaths = {"interviews"})
   List<Position> findByCreatedBy(UserEntity createdBy);
 
   /** Находит вакансии по создателю с пагинацией */
+  @EntityGraph(attributePaths = {"interviews"})
   Page<Position> findByCreatedBy(UserEntity createdBy, Pageable pageable);
 
   /** Находит вакансии по поисковому запросу */
   @Query(
-      "SELECT p FROM Position p WHERE "
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE "
           + "LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) OR "
           + "LOWER(p.company) LIKE LOWER(CONCAT('%', :search, '%')) OR "
           + "LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%'))")
@@ -41,30 +57,32 @@ public interface PositionRepository extends BaseRepository<Position, Long> {
 
   /** Находит вакансии по статусу и поисковому запросу */
   @Query(
-      "SELECT p FROM Position p WHERE p.status = :status AND "
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.status = :status AND "
           + "(LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) OR "
           + "LOWER(p.company) LIKE LOWER(CONCAT('%', :search, '%')))")
   Page<Position> findByStatusAndSearch(
       @Param("status") Position.Status status, @Param("search") String search, Pageable pageable);
 
   /** Находит вакансии по теме */
-  @Query("SELECT p FROM Position p JOIN p.topics t WHERE t = :topic")
+  @Query("SELECT p FROM Position p LEFT JOIN FETCH p.interviews JOIN p.topics t WHERE t = :topic")
   List<Position> findByTopic(@Param("topic") String topic);
 
   /** Находит вакансии с минимальным баллом */
+  @EntityGraph(attributePaths = {"interviews"})
   List<Position> findByMinScoreGreaterThan(Double minScore);
 
   /** Находит вакансии, созданные после указанной даты */
-  @Query("SELECT p FROM Position p WHERE p.createdAt >= :dateTime")
+  @Query("SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.createdAt >= :dateTime")
   List<Position> findByCreatedAtAfter(@Param("dateTime") LocalDateTime dateTime);
 
   /** Находит вакансии в указанном диапазоне дат создания */
-  @Query("SELECT p FROM Position p WHERE p.createdAt BETWEEN :start AND :end")
+  @Query(
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.createdAt BETWEEN :start AND :end")
   List<Position> findByCreatedAtBetween(
       @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
   /** Находит вакансии по команде */
-  @Query("SELECT p FROM Position p JOIN p.team t WHERE t.id = :userId")
+  @Query("SELECT p FROM Position p LEFT JOIN FETCH p.interviews JOIN p.team t WHERE t.id = :userId")
   List<Position> findByTeamMember(@Param("userId") String userId);
 
   /** Подсчитывает количество вакансий по статусу */
@@ -77,11 +95,12 @@ public interface PositionRepository extends BaseRepository<Position, Long> {
   long countByCreatedBy(UserEntity createdBy);
 
   /** Находит вакансии с публичными ссылками */
-  @Query("SELECT p FROM Position p WHERE p.publicLink IS NOT NULL AND p.publicLink != ''")
+  @Query(
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.publicLink IS NOT NULL AND p.publicLink != ''")
   List<Position> findWithPublicLinks();
 
   /** Находит вакансии с публичными ссылками (альтернативный метод) */
-  @Query("SELECT p FROM Position p WHERE p.publicLink IS NOT NULL")
+  @Query("SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.publicLink IS NOT NULL")
   List<Position> findByPublicLinkIsNotNull();
 
   /** Подсчитывает общее количество интервью по позиции */

@@ -1,5 +1,6 @@
 package azhukov.mapper;
 
+import azhukov.entity.Position;
 import azhukov.entity.Question;
 import azhukov.model.BaseQuestionFields;
 import azhukov.model.QuestionCreateRequest;
@@ -89,6 +90,28 @@ public interface QuestionMapper extends CommonMapper {
 
     return response;
   }
+
+  /** Преобразует Position в PositionQuestionsResponseInterviewSettings */
+  @Mapping(
+      target = "answerTime",
+      expression =
+          "java(position.getAnswerTime() != null ? position.getAnswerTime().longValue() : null)")
+  @Mapping(target = "language", source = "language")
+  @Mapping(target = "showOtherLang", source = "showOtherLang")
+  @Mapping(target = "saveAudio", source = "saveAudio")
+  @Mapping(target = "saveVideo", source = "saveVideo")
+  @Mapping(target = "randomOrder", source = "randomOrder")
+  @Mapping(target = "questionType", source = "questionType")
+  @Mapping(
+      target = "questionsCount",
+      expression =
+          "java(position.getQuestionsCount() != null ? position.getQuestionsCount().longValue() : null)")
+  @Mapping(target = "checkType", source = "checkType")
+  @Mapping(
+      target = "level",
+      expression =
+          "java(position.getLevel() != null ? position.getLevel().name().toLowerCase() : null)")
+  azhukov.model.PositionQuestionsResponseInterviewSettings toInterviewSettings(Position position);
 
   /** Маппинг типов вопросов */
   @ValueMapping(source = "TEXT", target = "TEXT")

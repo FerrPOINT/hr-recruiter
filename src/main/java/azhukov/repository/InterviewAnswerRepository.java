@@ -64,7 +64,7 @@ public interface InterviewAnswerRepository extends BaseRepository<InterviewAnswe
    * @return список ответов с транскрибацией
    */
   @Query(
-      "SELECT ia FROM InterviewAnswer ia WHERE ia.transcript IS NOT NULL OR ia.rawTranscription IS NOT NULL")
+      "SELECT ia FROM InterviewAnswer ia WHERE ia.formattedTranscription IS NOT NULL OR ia.rawTranscription IS NOT NULL")
   List<InterviewAnswer> findWithTranscription();
 
   /**

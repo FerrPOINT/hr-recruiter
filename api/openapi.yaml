@@ -6,9 +6,9 @@ info:
     Полная OpenAPI спецификация для платформы автоматизации.
     Включает все основные сущности, бизнес-операции, заглушки для AI и медиа, а также примеры для быстрой интеграции.
 servers:
-  - url: http://localhost:8080/api
+  - url: http://localhost:8080/api/v1
     description: Local server
-  - url: https://api.hr-recruiter.com/api
+  - url: https://api.hr-recruiter.com/api/v1
     description: Production server
 
 tags:
@@ -117,26 +117,30 @@ paths:
           name: page
           schema:
             type: integer
-            default: 1
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
         - in: query
           name: size
           schema:
             type: integer
             default: 20
+            minimum: 1
+            maximum: 100
+          description: Размер страницы
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: createdAt
+          description: Поле для сортировки
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Position'
-                  total:
-                    type: integer
+                $ref: '#/components/schemas/PositionsPaginatedResponse'
     post:
       operationId: createPosition
       tags:
@@ -168,6 +172,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -186,6 +191,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -210,6 +216,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -239,7 +246,8 @@ paths:
           name: id
           required: true
           schema:
-            type: string
+            type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -263,6 +271,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -283,15 +292,21 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Question'
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      content:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Question'
     post:
       operationId: createPositionQuestion
       tags:
@@ -303,6 +318,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -316,6 +332,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Question'
+
+  /positions/{positionId}/questions-with-settings:
+    get:
+      operationId: getPositionQuestionsWithSettings
+      tags:
+        - Questions
+      summary: Получить вопросы с настройками проведения собеседования
+      description: Возвращает список вопросов для вакансии вместе с настройками проведения собеседования (время ответа, язык, сохранение аудио/видео и т.д.)
+      parameters:
+        - in: path
+          name: positionId
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID вакансии
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionQuestionsResponse'
+        '404':
+          description: Вакансия не найдена
 
   /questions:
     get:
@@ -348,20 +389,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  content:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Question'
-                  totalElements:
-                    type: integer
-                  totalPages:
-                    type: integer
-                  size:
-                    type: integer
-                  number:
-                    type: integer
+                $ref: '#/components/schemas/QuestionsPaginatedResponse'
 
   /questions/{id}:
     get:
@@ -375,6 +403,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -395,6 +424,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -419,6 +449,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '204':
           description: Вопрос успешно удален
@@ -435,6 +466,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -455,6 +487,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -481,6 +514,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -499,6 +533,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -523,6 +558,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '204':
           description: Кандидат успешно удален
@@ -539,6 +575,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '201':
           description: OK
@@ -559,6 +596,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -581,92 +619,86 @@ paths:
           name: positionId
           schema:
             type: integer
+            format: int64
           description: Фильтр по ID вакансии
         - in: query
           name: candidateId
           schema:
             type: integer
+            format: int64
           description: Фильтр по ID кандидата
         - in: query
           name: page
           schema:
             type: integer
-            default: 1
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
         - in: query
           name: size
           schema:
             type: integer
             default: 20
+            minimum: 1
+            maximum: 100
+          description: Размер страницы
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: createdAt
+          description: Поле для сортировки
       responses:
         '200':
           description: Список собеседований
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Interview'
-                  total:
-                    type: integer
+                $ref: '#/components/schemas/InterviewsPaginatedResponse'
 
   /interviews/{id}:
     get:
       operationId: getInterview
       tags:
         - Interviews
-      summary: Получить собеседование
+      summary: Получить информацию о собеседовании и собеседнике
+      description: |
+        Возвращает информацию о собеседовании включая:
+        - Информацию о кандидате
+        - Информацию о вакансии
+        - Список вопросов
+        - Статус собеседования
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
-          description: OK
+          description: Информация о собеседовании
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Interview'
-
-  /interviews/{id}/start:
-    post:
-      operationId: startInterview
-      tags:
-        - Interviews
-      summary: Начать интервью
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: OK
-
-  /interviews/{id}/finish:
-    post:
-      operationId: finishInterview
-      tags:
-        - Interviews
-      summary: Завершить интервью
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: OK
+                type: object
+                properties:
+                  interview:
+                    $ref: '#/components/schemas/Interview'
+                  candidate:
+                    $ref: '#/components/schemas/Candidate'
+                  position:
+                    $ref: '#/components/schemas/Position'
+                  questions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Question'
+        '404':
+          description: Собеседование не найдено
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Interview'
+                $ref: '#/components/schemas/ErrorResponse'
 
   /interviews/{id}/answer:
     post:
@@ -680,6 +712,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -732,15 +765,35 @@ paths:
       tags:
         - Team & Users
       summary: Список пользователей
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Размер страницы
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: createdAt
+          description: Поле для сортировки
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/UsersPaginatedResponse'
     post:
       operationId: createUser
       tags:
@@ -772,6 +825,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -790,6 +844,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -814,6 +869,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '204':
           description: Пользователь успешно удален
@@ -864,6 +920,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '200':
           description: OK
@@ -882,6 +939,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       requestBody:
         required: true
         content:
@@ -906,6 +964,7 @@ paths:
           required: true
           schema:
             type: integer
+            format: int64
       responses:
         '204':
           description: Тариф успешно удален
@@ -958,102 +1017,18 @@ paths:
                     type: string
                     description: Транскрибированный текст
 
-  /ai/transcribe-answer:
-    post:
-      operationId: transcribeInterviewAnswer
-      tags:
-        - AI
-      summary: Транскрибировать и отформатировать аудио ответ на интервью
-      description: |
-        Обрабатывает аудио файл через пайплайн:
-        1. Whisper - транскрибация в сырой текст
-        2. Claude - форматирование текста (без добавления контента)
-        3. Сохранение результата в базу данных
-        
-        Сохраняет как сырой, так и отформатированный текст.
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - audioFile
-                - interviewAnswerId
-              properties:
-                audioFile:
-                  type: string
-                  format: binary
-                  description: Аудио файл для транскрибации
-                interviewAnswerId:
-                  type: string
-                  format: uuid
-                  description: ID ответа на интервью для сохранения результата
-      responses:
-        '200':
-          description: Аудио успешно обработано
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  formattedText:
-                    type: string
-                    description: Отформатированный текст от Claude
-                    example: "Я работал в компании три года, занимался разработкой на Java."
-                  interviewAnswerId:
-                    type: string
-                    format: uuid
-                    description: ID ответа на интервью
-        '400':
-          description: Неверные параметры запроса
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Audio file is empty"
-        '404':
-          description: Ответ на интервью не найден
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Interview answer not found"
-        '503':
-          description: Сервисы транскрибации недоступны
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Transcription services are not available"
-
   /ai/generate-questions:
     post:
       operationId: generateQuestions
       tags:
         - AI
-      summary: Сгенерировать вопросы (заглушка)
+      summary: Генерировать вопросы для собеседования
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                positionDescription:
-                  type: string
+              $ref: '#/components/schemas/GenerateQuestionsRequest'
       responses:
         '200':
           description: OK
@@ -1063,6 +1038,36 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Question'
+        '500':
+          description: Internal Server Error
+
+  /ai/generate-position:
+    post:
+      operationId: generatePosition
+      tags:
+        - AI
+      summary: Генерировать вакансию с помощью AI
+      description: |
+        Генерирует структуру вакансии на основе описания пользователя.
+        AI возвращает минимальный набор полей (title, description, topics, level, questions).
+        Остальные поля (status, language, settings и т.д.) устанавливаются системой по умолчанию.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionAiGenerationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionAiGenerationResponse'
+        '400':
+          description: Bad Request - некорректные входные данные
+        '500':
+          description: Internal Server Error - ошибка AI или системы
 
   /stats/positions:
     get:
@@ -1176,6 +1181,55 @@ paths:
                 items:
                   $ref: '#/components/schemas/User'
 
+  /user/info:
+    get:
+      operationId: getUserInfo
+      tags:
+        - Account
+      summary: Получить дополнительную информацию о пользователе
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phone:
+                    type: string
+
+  /ai/generate-position-data:
+    post:
+      operationId: generatePositionData
+      tags:
+        - AI
+      summary: Сгенерировать данные для вакансии на основе описания
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PositionDataGenerationRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionDataGenerationResponse'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Ошибка генерации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /checklist:
     get:
       operationId: getChecklist
@@ -1214,24 +1268,126 @@ paths:
                   questionsCount:
                     type: integer
 
-  /user/info:
-    get:
-      operationId: getUserInfo
+  /ai/transcribe-answer:
+    post:
+      operationId: transcribeAnswerWithAI
       tags:
-        - Account
-      summary: Получить дополнительную информацию о пользователе
+        - AI
+      summary: Транскрибировать и отформатировать аудио ответ на интервью
+      description: |
+        Обрабатывает аудио файл через пайплайн:
+        1. Whisper - транскрибация в сырой текст
+        2. Claude - форматирование текста (без добавления контента)
+        3. Сохранение результата в базу данных
+
+        Сохраняет как сырой, так и отформатированный текст.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audioFile
+                - interviewId
+                - questionId
+              properties:
+                audioFile:
+                  type: string
+                  format: binary
+                  description: Аудио файл для транскрибации
+                interviewId:
+                  type: integer
+                  format: int64
+                  description: ID интервью (определяет кандидата и позицию)
+                questionId:
+                  type: integer
+                  format: int64
+                  description: ID вопроса для создания ответа
+      responses:
+        '200':
+          description: Аудио успешно обработано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscribeAnswerWithAI200Response'
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Audio file is empty"
+        '404':
+          description: Интервью или вопрос не найден
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Interview or question not found"
+        '503':
+          description: Сервисы транскрибации недоступны
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Transcription services are not available"
+
+  /candidates:
+    get:
+      operationId: listCandidates
+      tags:
+        - Candidates
+      summary: Получить список всех кандидатов
+      parameters:
+        - in: query
+          name: positionId
+          schema:
+            type: integer
+            format: int64
+          description: Фильтр по ID вакансии
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Поиск по имени или email
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Размер страницы
+        - in: query
+          name: sort
+          schema:
+            type: string
+            default: createdAt
+          description: Поле для сортировки
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  phone:
-                    type: string
-                  preferences:
-                    type: object
+                $ref: '#/components/schemas/CandidatesPaginatedResponse'
 
 components:
   schemas:
@@ -1249,6 +1405,84 @@ components:
           type: string
           format: date-time
       required: [id, createdAt]
+    
+    # Общий класс для пагинированных ответов
+    PaginatedResponse:
+      type: object
+      description: "Базовый класс для всех пагинированных ответов"
+      properties:
+        content:
+          type: array
+          description: "Список элементов на текущей странице"
+          items:
+            type: object
+        totalElements:
+          type: integer
+          format: int64
+          description: "Общее количество элементов"
+          example: 150
+        totalPages:
+          type: integer
+          format: int64
+          description: "Общее количество страниц"
+          example: 15
+        number:
+          type: integer
+          format: int64
+          description: "Номер текущей страницы (начиная с 0)"
+          example: 0
+        size:
+          type: integer
+          format: int64
+          description: "Размер страницы"
+          example: 10
+      required: [content, totalElements, totalPages, number, size]
+    
+    # Пагинированные ответы для разных сущностей
+    QuestionsPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список вопросов"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    PositionsPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список позиций"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+
+    UsersPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список пользователей"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+
+    CandidatesPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список кандидатов"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+
+    InterviewsPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список интервью"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Interview'
     
     BasePositionFields:
       type: object
@@ -1631,19 +1865,24 @@ components:
           $ref: '#/components/schemas/InterviewStatusEnum'
         result:
           $ref: '#/components/schemas/InterviewResultEnum'
+        createdAt:
+          type: string
+          format: date-time
+          description: "Дата создания собеседования"
         startedAt:
           type: string
           format: date-time
+          description: "Дата начала собеседования"
         finishedAt:
           type: string
           format: date-time
+          description: "Дата окончания собеседования"
         transcript:
           type: string
         audioUrl:
           type: string
         videoUrl:
           type: string
-          description: "Ссылка на видео запись"
         aiScore:
           type: number
         answers:
@@ -1655,7 +1894,7 @@ components:
         - candidateId
         - positionId
         - status
-        - startedAt
+        - createdAt
     
     InterviewAnswer:
       type: object
@@ -1665,14 +1904,23 @@ components:
           format: int64
         interviewId:
           type: integer
+          format: int64
         questionId:
           type: integer
+          format: int64
         answerText:
           type: string
         audioUrl:
           type: string
         transcript:
           type: string
+        score:
+          type: number
+          format: float
+          description: "Оценка ответа от 0 до 100"
+        scoreJustification:
+          type: string
+          description: "Обоснование оценки"
         createdAt:
           type: string
           format: date-time
@@ -1683,6 +1931,7 @@ components:
       properties:
         questionId:
           type: integer
+          format: int64
         answerText:
           type: string
         audioUrl:
@@ -1690,6 +1939,16 @@ components:
         transcript:
           type: string
       required: [questionId]
+    
+    InterviewTranscribeResponse:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        transcript:
+          type: string
+      required: [questionId, transcript]
     
     Branding:
       allOf:
@@ -1864,6 +2123,250 @@ components:
           type: integer
           description: "Динамика в % по сравнению с прошлым месяцем"
           example: 15
+
+    PositionDataGenerationRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: "Описание вакансии для генерации данных"
+          example: "Нужен Java разработчик для разработки микросервисов"
+        existingData:
+          type: object
+          description: "Существующие данные вакансии (опционально)"
+          properties:
+            title:
+              type: string
+            topics:
+              type: array
+              items:
+                type: string
+            level:
+              $ref: '#/components/schemas/PositionLevelEnum'
+            tags:
+              type: array
+              items:
+                type: string
+      required: [description]
+
+    PositionDataGenerationResponse:
+      type: object
+      properties:
+        generatedData:
+          type: object
+          properties:
+            title:
+              type: string
+              description: "Сгенерированное название вакансии"
+              example: "Java Backend Developer"
+            topics:
+              type: array
+              items:
+                type: string
+              description: "Сгенерированные темы для собеседования"
+              example: ["Java Core", "Spring Framework", "Microservices", "Database Design"]
+            level:
+              $ref: '#/components/schemas/PositionLevelEnum'
+              description: "Предлагаемый уровень позиции"
+            tags:
+              type: array
+              items:
+                type: string
+              description: "Сгенерированные теги"
+              example: ["Java", "Backend", "Spring", "Microservices"]
+            suggestedDescription:
+              type: string
+              description: "Улучшенное описание вакансии"
+        confidence:
+          type: number
+          format: float
+          description: "Уверенность в генерации (0-1)"
+          example: 0.85
+        message:
+          type: string
+          description: "Сообщение о результатах генерации"
+          example: "Данные успешно сгенерированы на основе описания"
+
+    PositionQuestionsResponse:
+      type: object
+      description: "Ответ с вопросами вакансии и настройками проведения собеседования"
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+          description: "Список вопросов для вакансии"
+        interviewSettings:
+          type: object
+          description: "Настройки проведения собеседования"
+          properties:
+            answerTime:
+              type: integer
+              description: "Время ответа на вопрос в секундах"
+              example: 120
+            language:
+              type: string
+              description: "Язык собеседования"
+              example: "ru"
+            showOtherLang:
+              type: boolean
+              description: "Показывать вопросы на других языках"
+              example: false
+            saveAudio:
+              type: boolean
+              description: "Сохранять аудио"
+              example: true
+            saveVideo:
+              type: boolean
+              description: "Сохранять видео"
+              example: false
+            randomOrder:
+              type: boolean
+              description: "Случайный порядок вопросов"
+              example: false
+            questionType:
+              type: string
+              description: "Тип вопросов"
+              example: "mixed"
+            questionsCount:
+              type: integer
+              description: "Количество вопросов"
+              example: 10
+            checkType:
+              type: string
+              description: "Тип проверки"
+              example: "ai"
+            level:
+              type: string
+              description: "Уровень позиции"
+              example: "middle"
+      required: [questions, interviewSettings]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "Сообщение об ошибке"
+          example: "Произошла ошибка при обработке запроса"
+        error:
+          type: string
+          description: "Тип ошибки"
+          example: "VALIDATION_ERROR"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Время возникновения ошибки"
+          example: "2024-01-15T10:30:45Z"
+        path:
+          type: string
+          description: "Путь запроса"
+          example: "/api/positions"
+      required: [message, error, timestamp]
+
+    TranscribeAnswerWithAI200Response:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        formattedText:
+          type: string
+          description: Отформатированный текст от Claude
+          example: "Я работал в компании три года, занимался разработкой на Java."
+        interviewAnswerId:
+          type: integer
+          format: int64
+          description: ID ответа на интервью
+
+    TranscribeInterviewAnswerRequest:
+      type: object
+      properties:
+        questionId:
+          type: integer
+          format: int64
+        audioData:
+          type: string
+          format: binary
+          description: Аудио данные для транскрибации
+      required: [questionId, audioData]
+
+    # AI-генерация вакансии
+    PositionAiGenerationRequest:
+      type: object
+      description: "Запрос на генерацию вакансии с помощью AI"
+      properties:
+        description:
+          type: string
+          description: "Описание вакансии от пользователя"
+          example: "Нужен Java разработчик для разработки микросервисов"
+        questionsCount:
+          type: integer
+          description: "Количество вопросов для собеседования"
+          example: 5
+          minimum: 1
+          maximum: 20
+        questionType:
+          type: string
+          description: "Тип вопросов (hard, soft, mixed)"
+          example: "hard"
+      required: [description]
+
+    PositionAiGenerationResponse:
+      type: object
+      description: "Ответ AI с минимальной структурой вакансии"
+      properties:
+        title:
+          type: string
+          description: "Название вакансии"
+          example: "Java Backend Developer"
+        description:
+          type: string
+          description: "Описание вакансии"
+          example: "Разработка микросервисов на Java с использованием Spring Framework"
+        topics:
+          type: array
+          items:
+            type: string
+          description: "Ключевые темы/навыки для собеседования"
+          example: ["Java Core", "Spring Framework", "Microservices", "Database Design"]
+        level:
+          type: string
+          enum: [junior, middle, senior, lead]
+          description: "Уровень позиции"
+          example: "middle"
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PositionAiQuestion'
+          description: "Список вопросов для собеседования"
+      required: [title, topics, level, questions]
+
+    PositionAiQuestion:
+      type: object
+      description: "Вопрос для собеседования (AI-генерация)"
+      properties:
+        text:
+          type: string
+          description: "Текст вопроса"
+          example: "Расскажите о принципах SOLID"
+        type:
+          type: string
+          enum: [text, audio, choice]
+          description: "Тип вопроса"
+          example: "text"
+        order:
+          type: integer
+          description: "Порядок вопроса"
+          example: 1
+      required: [text, type, order]
+
+    GenerateQuestionsRequest:
+      type: object
+      properties:
+        positionDescription:
+          type: string
+      required: [positionDescription]
 
   securitySchemes:
     basicAuth:

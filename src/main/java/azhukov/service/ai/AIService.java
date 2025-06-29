@@ -50,4 +50,22 @@ public interface AIService {
    * @return Статистика использования
    */
   AIUsageStats getUsageStats();
+
+  /**
+   * Генерирует вопросы для собеседования на основе описания позиции. Вся бизнес-логика и проверки
+   * должны быть реализованы в сервисе, а не в контроллере.
+   *
+   * @param positionDescription Описание позиции
+   * @param count Количество вопросов (по умолчанию 10)
+   * @return Список вопросов
+   */
+  default List<String> generateQuestions(String positionDescription, int count)
+      throws AIServiceException {
+    // По умолчанию — просто делегируем в generateTextList
+    String prompt =
+        String.format(
+            "Сгенерируй %d профессиональных вопросов для собеседования на основе следующего описания вакансии:\n\n%s\n\nВопросы должны быть разнообразными и покрывать технические навыки, soft skills и опыт работы. Верни только список вопросов, каждый с новой строки.",
+            count, positionDescription);
+    return generateTextList(prompt, count);
+  }
 }

@@ -63,6 +63,38 @@ public class Position {
   @Column(name = "avg_score")
   private Double avgScore;
 
+  // Настройки проведения собеседования
+  @Column(name = "language")
+  private String language;
+
+  @Column(name = "show_other_lang")
+  private Boolean showOtherLang;
+
+  @Column(name = "answer_time")
+  private Integer answerTime; // время ответа на вопрос в секундах
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "level")
+  private Level level;
+
+  @Column(name = "save_audio")
+  private Boolean saveAudio;
+
+  @Column(name = "save_video")
+  private Boolean saveVideo;
+
+  @Column(name = "random_order")
+  private Boolean randomOrder;
+
+  @Column(name = "question_type")
+  private String questionType;
+
+  @Column(name = "questions_count")
+  private Integer questionsCount;
+
+  @Column(name = "check_type")
+  private String checkType;
+
   @ManyToMany(fetch = FetchType.LAZY)
   @JoinTable(
       name = "position_team",
@@ -100,6 +132,14 @@ public class Position {
     ACTIVE, // Активная
     PAUSED, // Приостановлена
     ARCHIVED // Архивная
+  }
+
+  /** Уровни позиции */
+  public enum Level {
+    JUNIOR, // Младший
+    MIDDLE, // Средний
+    SENIOR, // Старший
+    LEAD // Лид
   }
 
   /** Добавляет вопрос к вакансии */

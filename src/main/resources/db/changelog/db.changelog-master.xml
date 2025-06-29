@@ -9,4 +9,28 @@
         <sqlFile path="db/changelog/changes/001-initial-schema.sql"/>
     </changeSet>
 
+    <changeSet id="002-default-admin" author="ai">
+        <sqlFile path="db/changelog/changes/002-default-admin.sql"/>
+    </changeSet>
+
+    <changeSet id="003-branding-table" author="ai">
+        <sqlFile path="db/changelog/changes/003-branding-table.sql"/>
+    </changeSet>
+
+    <changeSet id="004-tariffs-table" author="ai">
+        <sqlFile path="db/changelog/changes/004-tariffs-table.sql"/>
+    </changeSet>
+
+    <changeSet id="005-position-interview-settings" author="ai">
+        <sqlFile path="db/changelog/changes/005-position-interview-settings.sql"/>
+    </changeSet>
+
+    <changeSet id="006-add-score-justification" author="ai">
+        <sqlFile path="db/changelog/changes/006-add-score-justification.sql"/>
+    </changeSet>
+
+    <changeSet id="007-add-user-preferences" author="ai">
+        <sqlFile path="db/changelog/changes/007-add-user-preferences.sql"/>
+    </changeSet>
+
 </databaseChangeLog> 

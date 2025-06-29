@@ -20,10 +20,10 @@ import org.springframework.web.bind.annotation.*;
  * Контроллер для аутентификации Реализует интерфейс AuthApi, сгенерированный по OpenAPI
  * спецификации
  */
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Auth", description = "Аутентификация и управление сессиями")
+@Slf4j
 public class AuthController implements AuthApi {
 
   private final AuthenticationManager authenticationManager;
@@ -31,19 +31,22 @@ public class AuthController implements AuthApi {
 
   @Override
   public ResponseEntity<AuthResponse> login(LoginRequest loginRequest) {
-    log.info("Login attempt for user: {}", loginRequest.getEmail());
+    log.info("=== AUTH CONTROLLER: Login attempt for user: {} ===", loginRequest.getEmail());
 
     try {
       // Аутентификация пользователя
+      log.info("=== AUTH CONTROLLER: Starting authentication ===");
       Authentication authentication =
           authenticationManager.authenticate(
               new UsernamePasswordAuthenticationToken(
                   loginRequest.getEmail(), loginRequest.getPassword()));
+      log.info("=== AUTH CONTROLLER: Authentication successful ===");
 
       // Устанавливаем аутентификацию в контекст
       SecurityContextHolder.getContext().setAuthentication(authentication);
 
       // Получаем данные пользователя
+      log.info("=== AUTH CONTROLLER: Getting user data ===");
       User user = userService.getCurrentUser(loginRequest.getEmail());
 
       // Создаем ответ
@@ -51,11 +54,11 @@ public class AuthController implements AuthApi {
       response.setUser(user);
       response.setToken("jwt-token-placeholder"); // TODO: Реализовать JWT токены
 
-      log.info("User {} successfully logged in", loginRequest.getEmail());
+      log.info("=== AUTH CONTROLLER: User {} successfully logged in ===", loginRequest.getEmail());
       return ResponseEntity.ok(response);
 
     } catch (Exception e) {
-      log.error("Login failed for user: {}", loginRequest.getEmail(), e);
+      log.error("=== AUTH CONTROLLER: Login failed for user: {} ===", loginRequest.getEmail(), e);
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
   }
