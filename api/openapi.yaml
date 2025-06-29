@@ -109,6 +109,13 @@ paths:
             $ref: '#/components/schemas/PositionStatusEnum'
           description: Фильтр по статусу
         - in: query
+          name: owner
+          schema:
+            type: string
+            enum: [all, me]
+            default: all
+          description: Фильтр по владельцу (all - все вакансии, me - только мои)
+        - in: query
           name: search
           schema:
             type: string
@@ -1493,6 +1500,11 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/PositionStatusEnum'
+        ownerId:
+          type: integer
+          format: int64
+          description: "ID владельца вакансии"
+          example: 1
         topics:
           type: array
           items:

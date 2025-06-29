@@ -48,6 +48,32 @@ public interface PositionRepository extends BaseRepository<Position, Long> {
   @EntityGraph(attributePaths = {"interviews"})
   Page<Position> findByCreatedBy(UserEntity createdBy, Pageable pageable);
 
+  /** Находит вакансии по создателю и статусу */
+  @EntityGraph(attributePaths = {"interviews"})
+  Page<Position> findByCreatedByAndStatus(
+      UserEntity createdBy, Position.Status status, Pageable pageable);
+
+  /** Находит вакансии по создателю и поисковому запросу */
+  @Query(
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.createdBy = :createdBy AND "
+          + "(LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+          + "LOWER(p.company) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+          + "LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+  Page<Position> findByCreatedByAndSearch(
+      @Param("createdBy") UserEntity createdBy, @Param("search") String search, Pageable pageable);
+
+  /** Находит вакансии по создателю, статусу и поисковому запросу */
+  @Query(
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE p.createdBy = :createdBy AND p.status = :status AND "
+          + "(LOWER(p.title) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+          + "LOWER(p.company) LIKE LOWER(CONCAT('%', :search, '%')) OR "
+          + "LOWER(p.description) LIKE LOWER(CONCAT('%', :search, '%')))")
+  Page<Position> findByCreatedByAndStatusAndSearch(
+      @Param("createdBy") UserEntity createdBy,
+      @Param("status") Position.Status status,
+      @Param("search") String search,
+      Pageable pageable);
+
   /** Находит вакансии по поисковому запросу */
   @Query(
       "SELECT p FROM Position p LEFT JOIN FETCH p.interviews WHERE "

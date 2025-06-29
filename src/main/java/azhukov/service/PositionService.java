@@ -129,23 +129,56 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   /** Получает вакансии с фильтрацией и пагинацией */
   @Transactional(readOnly = true)
   public Page<azhukov.model.Position> getPositionsPage(
-      PositionStatusEnum status, String search, Pageable pageable) {
-    log.debug("Getting positions with filters: status={}, search={}", status, search);
+      PositionStatusEnum status, String search, String owner, String userEmail, Pageable pageable) {
+    log.debug(
+        "Getting positions with filters: status={}, search={}, owner={}", status, search, owner);
 
-    if (status != null && search != null && !search.trim().isEmpty()) {
-      Position.Status entityStatus = positionMapper.mapStatus(status);
-      Page<Position> positions = repository.findByStatusAndSearch(entityStatus, search, pageable);
-      return positionMapper.toDtoPage(positions);
-    } else if (status != null) {
-      Position.Status entityStatus = positionMapper.mapStatus(status);
-      Page<Position> positions = repository.findByStatus(entityStatus, pageable);
-      return positionMapper.toDtoPage(positions);
-    } else if (search != null && !search.trim().isEmpty()) {
-      Page<Position> positions = repository.findBySearchTerm(search, pageable);
-      return positionMapper.toDtoPage(positions);
+    // Определяем, нужно ли фильтровать по владельцу
+    boolean filterByOwner = "me".equals(owner) && userEmail != null;
+
+    if (filterByOwner) {
+      UserEntity currentUser =
+          userRepository
+              .findByEmail(userEmail)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("User not found with email: " + userEmail));
+
+      if (status != null && search != null && !search.trim().isEmpty()) {
+        Position.Status entityStatus = positionMapper.mapStatus(status);
+        Page<Position> positions =
+            repository.findByCreatedByAndStatusAndSearch(
+                currentUser, entityStatus, search, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else if (status != null) {
+        Position.Status entityStatus = positionMapper.mapStatus(status);
+        Page<Position> positions =
+            repository.findByCreatedByAndStatus(currentUser, entityStatus, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else if (search != null && !search.trim().isEmpty()) {
+        Page<Position> positions =
+            repository.findByCreatedByAndSearch(currentUser, search, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else {
+        Page<Position> positions = repository.findByCreatedBy(currentUser, pageable);
+        return positionMapper.toDtoPage(positions);
+      }
     } else {
-      Page<Position> positions = repository.findAll(pageable);
-      return positionMapper.toDtoPage(positions);
+      // Фильтрация по всем вакансиям (owner = "all" или не указан)
+      if (status != null && search != null && !search.trim().isEmpty()) {
+        Position.Status entityStatus = positionMapper.mapStatus(status);
+        Page<Position> positions = repository.findByStatusAndSearch(entityStatus, search, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else if (status != null) {
+        Position.Status entityStatus = positionMapper.mapStatus(status);
+        Page<Position> positions = repository.findByStatus(entityStatus, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else if (search != null && !search.trim().isEmpty()) {
+        Page<Position> positions = repository.findBySearchTerm(search, pageable);
+        return positionMapper.toDtoPage(positions);
+      } else {
+        Page<Position> positions = repository.findAll(pageable);
+        return positionMapper.toDtoPage(positions);
+      }
     }
   }
 

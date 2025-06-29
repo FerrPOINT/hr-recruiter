@@ -24,6 +24,7 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "company", source = "company")
   @Mapping(target = "description", source = "description")
   @Mapping(target = "status", source = "status")
+  @Mapping(target = "ownerId", source = "createdBy.id")
   @Mapping(target = "createdAt", source = "createdAt")
   @Mapping(target = "updatedAt", source = "updatedAt")
   @Mapping(target = "publicLink", source = "publicLink")

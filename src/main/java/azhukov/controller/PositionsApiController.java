@@ -93,13 +93,15 @@ public class PositionsApiController implements PositionsApi {
   public ResponseEntity<PaginatedResponse> listPositions(
       Optional<PositionStatusEnum> status,
       Optional<String> search,
+      Optional<String> owner,
       Optional<Long> page,
       Optional<Long> size,
       Optional<String> sort) {
     log.debug(
-        "Getting positions with status={}, search={}, page={}, size={}, sort={}",
+        "Getting positions with status={}, search={}, owner={}, page={}, size={}, sort={}",
         status,
         search,
+        owner,
         page,
         size,
         sort);
@@ -108,8 +110,13 @@ public class PositionsApiController implements PositionsApi {
     Long pageSize = size.orElse(20L);
     Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
 
+    // Получаем email текущего пользователя
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String userEmail = authentication.getName();
+
     Page<Position> positions =
-        positionService.getPositionsPage(status.orElse(null), search.orElse(null), pageable);
+        positionService.getPositionsPage(
+            status.orElse(null), search.orElse(null), owner.orElse("all"), userEmail, pageable);
 
     PaginatedResponse response = new PaginatedResponse();
     PaginationUtils.fillPaginationFields(positions, response);
