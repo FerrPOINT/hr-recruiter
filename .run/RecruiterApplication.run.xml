@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="RecruiterApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-    <option name="ACTIVE_PROFILES" value="local,ferrpoint" />
+    <option name="ACTIVE_PROFILES" value="local" />
     <module name="hr-recruiter.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="azhukov.RecruiterApplication" />
     <extension name="coverage">

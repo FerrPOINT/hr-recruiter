@@ -116,7 +116,7 @@ security:
 # Claude AI Configuration
 anthropic:
   api:
-    key: sk-demo-key
+    key: ${ANTHROPIC_API_KEY:sk-demo-key}
     url: https://api.anthropic.com/v1/messages
   model: claude-3-sonnet-20240229
   max-tokens: 1000
@@ -132,7 +132,7 @@ anthropic:
 # OpenRouter AI Configuration (основной AI сервис)
 openrouter:
   api:
-    key: sk-or-demo-key
+    key: ${OPENROUTER_API_KEY:sk-or-demo-key}
     url: https://openrouter.ai/api/v1/chat/completions
   model: anthropic/claude-3.5-sonnet
   max-tokens: 1000

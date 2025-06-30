@@ -114,12 +114,26 @@ public class PositionsApiController implements PositionsApi {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     String userEmail = authentication.getName();
 
+    // Обрабатываем параметры поиска и владельца
+    String searchTerm = search.orElse(null);
+    String ownerFilter = owner.orElse("all");
+
+    // Если search равен "all" или пустой, устанавливаем в null
+    if (searchTerm != null && ("all".equals(searchTerm) || searchTerm.trim().isEmpty())) {
+      searchTerm = null;
+    }
+
+    // Если owner равен "all" или пустой, устанавливаем в "all"
+    if (ownerFilter != null && ("all".equals(ownerFilter) || ownerFilter.trim().isEmpty())) {
+      ownerFilter = "all";
+    }
+
     Page<Position> positions =
         positionService.getPositionsPage(
-            status.orElse(null), search.orElse(null), owner.orElse("all"), userEmail, pageable);
+            status.orElse(null), searchTerm, ownerFilter, userEmail, pageable);
 
     PaginatedResponse response = new PaginatedResponse();
-    PaginationUtils.fillPaginationFields(positions, response);
+    response = PaginationUtils.fillPaginationFields(positions, response);
 
     return ResponseEntity.ok(response);
   }

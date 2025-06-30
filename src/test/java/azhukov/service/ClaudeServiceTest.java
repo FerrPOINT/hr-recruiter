@@ -20,9 +20,10 @@ public class ClaudeServiceTest {
 
     // Создаем ClaudeService с конфигурацией
     ClaudeConfig config = new ClaudeConfig();
-    String apiKey = System.getenv("CLAUDE_API_KEY");
+    String apiKey = System.getenv("ANTHROPIC_API_KEY");
     if (apiKey == null || apiKey.isBlank()) {
-      apiKey = "v1-a82138f8985c68a0f6573cd443141753e3aa5173707959864c6b1a87452fe045";
+      System.out.println("WARNING: ANTHROPIC_API_KEY не установлен. Тест будет пропущен.");
+      return;
     }
     config.setApiKey(apiKey.trim());
     config.setModel("claude-3-5-sonnet-20241022");
@@ -96,7 +97,12 @@ public class ClaudeServiceTest {
     // Настраиваем заголовки
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);
-    headers.set("x-api-key", System.getenv("CLAUDE_API_KEY")); // Используем переменную окружения
+    String apiKey = System.getenv("ANTHROPIC_API_KEY");
+    if (apiKey == null || apiKey.isBlank()) {
+      System.out.println("WARNING: ANTHROPIC_API_KEY не установлен. Тест будет пропущен.");
+      return;
+    }
+    headers.set("x-api-key", apiKey);
     headers.set("anthropic-version", "2023-06-01");
 
     // Создаем запрос

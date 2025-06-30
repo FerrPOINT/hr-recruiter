@@ -23,7 +23,8 @@ public class OpenRouterLocalTest {
     OpenRouterConfig config = new OpenRouterConfig();
     String apiKey = System.getenv("OPENROUTER_API_KEY");
     if (apiKey == null || apiKey.isBlank()) {
-      apiKey = "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";
+      System.out.println("WARNING: OPENROUTER_API_KEY не установлен. Тест будет пропущен.");
+      return;
     }
     config.setApiKey(apiKey.trim());
     config.setModel("anthropic/claude-3.5-sonnet");
@@ -129,7 +130,8 @@ public class OpenRouterLocalTest {
     headers.setContentType(MediaType.APPLICATION_JSON);
     String apiKey = System.getenv("OPENROUTER_API_KEY");
     if (apiKey == null || apiKey.isBlank()) {
-      apiKey = "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";
+      System.out.println("WARNING: OPENROUTER_API_KEY не установлен. Тест будет пропущен.");
+      return;
     }
     headers.set("Authorization", "Bearer " + apiKey);
     headers.set("HTTP-Referer", "https://github.com/azhukov/hr-recruiter-back");

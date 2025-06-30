@@ -21,7 +21,7 @@ spring:
 # OpenRouter Configuration для тестов
 openrouter:
   api:
-    key: sk-test-key
+    key: ${OPENROUTER_API_KEY:sk-test-key}
     url: https://openrouter.ai/api/v1/chat/completions
   model: anthropic/claude-3.5-sonnet
   max-tokens: 100
@@ -37,7 +37,7 @@ openrouter:
 # Claude Configuration для тестов (отключен)
 anthropic:
   api:
-    key: sk-test-key
+    key: ${ANTHROPIC_API_KEY:sk-test-key}
     url: https://api.anthropic.com/v1/messages
   model: claude-3-sonnet-20240229
   max-tokens: 100

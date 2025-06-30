@@ -140,27 +140,53 @@ docker-compose up -d
 
 ### Переменные окружения
 
+Создайте файл `.env` на основе `env.example`:
+
 ```bash
-# Claude AI API
-ANTHROPIC_API_KEY=your-claude-api-key
-ANTHROPIC_MODEL=claude-3-sonnet-20240229
-ANTHROPIC_MAX_TOKENS=1000
+# AI Service API Keys
+# Получите ключи на https://openrouter.ai/ и https://console.anthropic.com/
+OPENROUTER_API_KEY=sk-or-v1-your-openrouter-api-key-here
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
 
-# База данных
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=hr_recruiter
-DB_USER=postgres
-DB_PASSWORD=password
+# Database Configuration
+DB_URL=jdbc:postgresql://localhost:5432/hr_recruiter
+DB_USERNAME=hr_user
+DB_PASSWORD=hr_password
 
-# Приложение
-SERVER_PORT=8080
-JWT_SECRET=your-jwt-secret
+# JWT Configuration
+JWT_SECRET=your-secret-key-here-make-it-long-and-secure
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# Mail Configuration
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-app-password
+
+# Whisper Service (для транскрибации аудио)
+WHISPER_URL=http://localhost:9000
 ```
 
 ### application.yaml
 
 ```yaml
+# OpenRouter AI Configuration (основной AI сервис)
+openrouter:
+  api:
+    key: ${OPENROUTER_API_KEY:sk-or-demo-key}
+    url: https://openrouter.ai/api/v1/chat/completions
+  model: anthropic/claude-3.5-sonnet
+  max-tokens: 1000
+  temperature: 0.7
+  timeout: 30000
+  enable-prompt-caching: true
+  enable-usage-metrics: true
+
+# Claude AI Configuration (альтернативный сервис)
 anthropic:
   api:
     key: ${ANTHROPIC_API_KEY:sk-demo-key}
