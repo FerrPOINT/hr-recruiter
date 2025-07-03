@@ -67,12 +67,6 @@ management:
     health:
       show-details: always
 
-# Server Configuration
-server:
-  port: 8080
-  servlet:
-    context-path: /v1
-
 # Logging Configuration for local development
 logging:
   level:
