@@ -3,7 +3,6 @@ package azhukov.service.ai.elevenlabs;
 import azhukov.config.ElevenLabsProperties;
 import azhukov.service.ai.elevenlabs.dto.ElevenLabsSTTResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,26 +41,13 @@ public class ElevenLabsService {
           audioFile.getOriginalFilename(),
           audioFile.getSize());
 
-      // Подготавливаем multipart данные
+      // Подготавливаем multipart данные согласно официальной документации ElevenLabs
       MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-      // Создаем InputStreamResource из MultipartFile
-      org.springframework.core.io.InputStreamResource audioResource =
-          new org.springframework.core.io.InputStreamResource(audioFile.getInputStream()) {
-            @Override
-            public String getFilename() {
-              return audioFile.getOriginalFilename();
-            }
+      // Добавляем аудио файл как MultipartFile напрямую
+      body.add("audio", audioFile);
 
-            @Override
-            public long contentLength() {
-              return audioFile.getSize();
-            }
-          };
-
-      body.add("audio", audioResource);
-
-      // Добавляем параметры запроса
+      // Добавляем параметры запроса согласно документации
       body.add("model_id", properties.getModelId().getModelId());
       body.add("language_code", properties.getLanguage().getCode());
       body.add("temperature", properties.getTemperature());
@@ -92,6 +78,17 @@ public class ElevenLabsService {
           properties.getTemperature(),
           audioFile.getOriginalFilename(),
           audioFile.getSize());
+
+      // Отладочная информация о multipart данных
+      log.info("Multipart body contains {} parts", body.size());
+      for (String key : body.keySet()) {
+        Object value = body.getFirst(key);
+        log.info(
+            "Body part '{}': {} (type: {})",
+            key,
+            value,
+            value != null ? value.getClass().getSimpleName() : "null");
+      }
 
       ResponseEntity<ElevenLabsSTTResponse> response =
           restTemplate.exchange(
@@ -126,9 +123,6 @@ public class ElevenLabsService {
             "Failed to transcribe audio: " + response.getStatusCode() + ", body: " + errorBody);
       }
 
-    } catch (IOException e) {
-      log.error("Error reading audio file: {}", e.getMessage(), e);
-      throw new RuntimeException("Error processing audio file", e);
     } catch (Exception e) {
       long processingTime = System.currentTimeMillis() - startTime;
       log.error(

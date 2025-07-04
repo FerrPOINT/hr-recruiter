@@ -371,6 +371,7 @@ public class TranscriptionService {
       log.info("Audio file validation passed");
 
       // Выбор провайдера транскрибации
+      log.info("Current transcription provider: {}", transcriptionProperties.getProvider());
       String transcription;
       switch (transcriptionProperties.getProvider()) {
         case ELEVENLABS -> {
