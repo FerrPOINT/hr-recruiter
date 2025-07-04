@@ -44,9 +44,10 @@ public class ElevenLabsService {
       // Подготавливаем multipart данные согласно официальной документации ElevenLabs
       MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-      // Создаем InputStreamResource из MultipartFile для правильной сериализации
-      org.springframework.core.io.InputStreamResource audioResource =
-          new org.springframework.core.io.InputStreamResource(audioFile.getInputStream()) {
+      // Создаем ByteArrayResource из MultipartFile для правильной сериализации
+      byte[] audioBytes = audioFile.getBytes();
+      org.springframework.core.io.ByteArrayResource audioResource =
+          new org.springframework.core.io.ByteArrayResource(audioBytes) {
             @Override
             public String getFilename() {
               return audioFile.getOriginalFilename();
