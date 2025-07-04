@@ -196,7 +196,6 @@ app:
         model-id: ELEVEN_MULTILINGUAL_V2
         language: RUSSIAN
         temperature: 0.0
-      provider: OPENAI # или ELEVENLABS
 
 # Transcription Configuration
 transcription:

@@ -42,18 +42,24 @@ public class ElevenLabsService {
           audioFile.getOriginalFilename(),
           audioFile.getSize());
 
-      // TODO: удалить после отладки - сохраняем файл во временную директорию для проверки
-      java.io.File tempFile =
-          java.io.File.createTempFile("elevenlabs-upload-", "-" + audioFile.getOriginalFilename());
-      audioFile.transferTo(tempFile);
-      log.warn(
-          "[TODO] Audio file saved for debug: {} ({} bytes)",
-          tempFile.getAbsolutePath(),
-          tempFile.length());
-
       // Подготавливаем multipart данные
       MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-      body.add("audio", new org.springframework.core.io.FileSystemResource(tempFile));
+
+      // Создаем InputStreamResource из MultipartFile
+      org.springframework.core.io.InputStreamResource audioResource =
+          new org.springframework.core.io.InputStreamResource(audioFile.getInputStream()) {
+            @Override
+            public String getFilename() {
+              return audioFile.getOriginalFilename();
+            }
+
+            @Override
+            public long contentLength() {
+              return audioFile.getSize();
+            }
+          };
+
+      body.add("audio", audioResource);
 
       // Добавляем параметры запроса
       body.add("model_id", properties.getModelId().getModelId());
@@ -78,12 +84,14 @@ public class ElevenLabsService {
       // Отправляем запрос к ElevenLabs STT API
       String transcriptionUrl = properties.getApiUrl() + "/v1/speech-to-text";
 
-      log.debug("Sending request to ElevenLabs STT: {}", transcriptionUrl);
-      log.debug(
-          "ElevenLabs parameters - Model: {}, Language: {}, Temperature: {}",
+      log.info("Sending request to ElevenLabs STT: {}", transcriptionUrl);
+      log.info(
+          "ElevenLabs parameters - Model: {}, Language: {}, Temperature: {}, File: {} ({} bytes)",
           properties.getModelId().getModelId(),
           properties.getLanguage().getCode(),
-          properties.getTemperature());
+          properties.getTemperature(),
+          audioFile.getOriginalFilename(),
+          audioFile.getSize());
 
       ResponseEntity<ElevenLabsSTTResponse> response =
           restTemplate.exchange(
