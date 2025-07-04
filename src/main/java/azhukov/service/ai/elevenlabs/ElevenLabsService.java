@@ -44,8 +44,17 @@ public class ElevenLabsService {
       // Подготавливаем multipart данные согласно официальной документации ElevenLabs
       MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-      // Добавляем MultipartFile напрямую - Spring должен правильно его сериализовать
-      body.add("audio", audioFile);
+      // Используем ByteArrayResource для правильной сериализации
+      byte[] audioBytes = audioFile.getBytes();
+      org.springframework.core.io.ByteArrayResource audioResource =
+          new org.springframework.core.io.ByteArrayResource(audioBytes) {
+            @Override
+            public String getFilename() {
+              return audioFile.getOriginalFilename();
+            }
+          };
+
+      body.add("file", audioResource);
 
       log.info("Sending multipart request to ElevenLabs STT with {} parts", body.size());
       log.info(
@@ -54,10 +63,12 @@ public class ElevenLabsService {
           audioFile.getSize(),
           audioFile.getContentType());
 
-      // Добавляем параметры запроса согласно документации
-      body.add("model_id", properties.getModelId().getModelId());
-      body.add("language_code", properties.getLanguage().getCode());
-      body.add("temperature", properties.getTemperature());
+      // Добавляем параметры запроса согласно официальной документации ElevenLabs
+      body.add(
+          "model_id",
+          "scribe_v1"); // Model to use, currently only 'scribe_v1' and 'scribe_v1_experimental' are
+      // available
+      body.add("language_code", properties.getLanguage().getCode()); // Language of the audio file
 
       // Настраиваем заголовки с аутентификацией
       HttpHeaders headers = new HttpHeaders();
