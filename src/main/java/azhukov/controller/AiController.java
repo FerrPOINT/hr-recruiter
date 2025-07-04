@@ -14,8 +14,8 @@ import azhukov.model.TranscribeAudio200Response;
 import azhukov.service.PositionDataGenerationService;
 import azhukov.service.RewriteService;
 import azhukov.service.TranscriptionService;
-import azhukov.service.WhisperService;
 import azhukov.service.ai.AIService;
+import azhukov.service.ai.elevenlabs.ElevenLabsService;
 import azhukov.service.ai.openrouter.OpenRouterService;
 import azhukov.util.EnumUtils;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class AiController implements AiApi {
 
   private final AIService aiService;
   private final RewriteService rewriteService;
-  private final WhisperService whisperService;
+  private final ElevenLabsService elevenLabsService;
   private final TranscriptionService transcriptionService;
   private final PositionDataGenerationService positionDataGenerationService;
   private final AiOpenApiMapper aiOpenApiMapper;
@@ -148,7 +148,7 @@ public class AiController implements AiApi {
   @Override
   public ResponseEntity<TranscribeAudio200Response> transcribeAudio(MultipartFile audio) {
     try {
-      String transcription = whisperService.processAudioFile(audio);
+      String transcription = elevenLabsService.processAudioFile(audio);
       TranscribeAudio200Response response = new TranscribeAudio200Response();
       response.setTranscript(transcription);
       return ResponseEntity.ok(response);

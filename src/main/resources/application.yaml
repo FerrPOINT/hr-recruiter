@@ -87,11 +87,24 @@ server:
     mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
     min-response-size: 1024
 
+# Jackson Configuration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+      write-date-timestamps-as-nanoseconds: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: UTC
+
 # Logging Configuration
 logging:
   level:
     azhukov: INFO
     azhukov.config.LoggingConfig: INFO
+    azhukov.service.ai.elevenlabs: DEBUG
+    azhukov.config.ElevenLabsConfig: DEBUG
+    azhukov.config.ElevenLabsProperties: DEBUG
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.hibernate.SQL: WARN
@@ -113,28 +126,14 @@ security:
   basic:
     enabled: true
 
-# Claude AI Configuration
-anthropic:
-  api:
-    key: ${ANTHROPIC_API_KEY:sk-demo-key}
-    url: https://api.anthropic.com/v1/messages
-  model: claude-3-sonnet-20240229
-  max-tokens: 1000
-  temperature: 0.7
-  timeout: 30000
-  max-retries: 3
-  retry-delay: 1000
-  enable-prompt-caching: true
-  prompt-cache-size: 1000
-  enable-request-logging: true
-  enable-usage-metrics: true
+
 
 # OpenRouter AI Configuration (основной AI сервис)
 openrouter:
   api:
     key: ${OPENROUTER_API_KEY:sk-or-demo-key}
     url: https://openrouter.ai/api/v1/chat/completions
-  model: anthropic/claude-3.5-sonnet
+  model: anthropic/claude-sonnet-4-20250522
   max-tokens: 1000
   temperature: 0.7
   timeout: 30000
@@ -150,8 +149,8 @@ app:
   debug:
     enabled: false # Включить для логирования тела запросов
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:8080
-    allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
+    allowed-origins: "*"
+    allowed-methods: "*"
     allowed-headers: "*"
     allow-credentials: true
     max-age: 3600
@@ -175,17 +174,15 @@ app:
   
   ai:
     transcription:
-      whisper:
-        url: http://localhost:9000
-        timeout: 60000 # Увеличиваем timeout для больших файлов
+      # ElevenLabs STT Configuration
+      elevenlabs:
+        api-url: https://api.elevenlabs.io
+        api-key: ${ELEVEN_LABS_API_KEY:}
+        timeout: 60000
         retry-attempts: 3
-        supported-formats: mp3,wav,m4a,ogg,flac,aac
-        language: ru # Явно указываем русский язык
-        model: medium # Используем более качественную модель для лучшего распознавания русского
-        # Дополнительные параметры для улучшения качества
-        word-timestamps: true # Включаем временные метки слов
-        condition-on-previous-text: false # Не используем предыдущий контекст
-        temperature: 0.0 # Нулевая температура для более точного распознавания
+        model-id: ELEVEN_MULTILINGUAL_V2
+        language: RUSSIAN
+        temperature: 0.0
 
 # Management Endpoints
 management:

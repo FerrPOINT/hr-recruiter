@@ -57,11 +57,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     
-    // AI Integration - HTTP clients for AI providers
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
-    
     // Database
     implementation 'org.postgresql:postgresql'
     implementation 'org.liquibase:liquibase-core'
@@ -71,8 +66,6 @@ dependencies {
     
     // Utilities
     implementation 'org.apache.commons:commons-lang3:3.15.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'org.apache.commons:commons-text:1.11.0'
     implementation 'com.google.guava:guava:33.2.0-jre'
     

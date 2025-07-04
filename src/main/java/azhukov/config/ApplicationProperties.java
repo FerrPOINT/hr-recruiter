@@ -111,7 +111,7 @@ public class ApplicationProperties {
   @Data
   public static class Anthropic {
     private String apiKey = "${ANTHROPIC_API_KEY:}";
-    private String model = "claude-3-sonnet-20240229";
+    private String model = "anthropic/claude-sonnet-4-20250522";
     private int maxTokens = Constants.DEFAULT_MAX_TOKENS;
     private double temperature = Constants.DEFAULT_TEMPERATURE;
   }

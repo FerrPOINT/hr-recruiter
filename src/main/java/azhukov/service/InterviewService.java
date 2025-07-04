@@ -40,7 +40,6 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
   private final PositionRepository positionRepository;
   private final QuestionRepository questionRepository;
   private final InterviewAnswerRepository interviewAnswerRepository;
-  private final WhisperService whisperService;
   private final InterviewMapper interviewMapper;
   private final CandidateMapper candidateMapper;
   private final PositionMapper positionMapper;
@@ -52,7 +51,6 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
       PositionRepository positionRepository,
       QuestionRepository questionRepository,
       InterviewAnswerRepository interviewAnswerRepository,
-      WhisperService whisperService,
       InterviewMapper interviewMapper,
       CandidateMapper candidateMapper,
       PositionMapper positionMapper,
@@ -62,7 +60,6 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     this.positionRepository = positionRepository;
     this.questionRepository = questionRepository;
     this.interviewAnswerRepository = interviewAnswerRepository;
-    this.whisperService = whisperService;
     this.interviewMapper = interviewMapper;
     this.candidateMapper = candidateMapper;
     this.positionMapper = positionMapper;

@@ -27,7 +27,7 @@ public class OpenRouterLocalTest {
       return;
     }
     config.setApiKey(apiKey.trim());
-    config.setModel("anthropic/claude-3.5-sonnet");
+    config.setModel("anthropic/claude-sonnet-4-20250522");
     config.setMaxTokens(1000);
     config.setApiUrl("https://openrouter.ai/api/v1/chat/completions");
 
@@ -139,7 +139,7 @@ public class OpenRouterLocalTest {
 
     // Создаем запрос
     OpenRouterRequest request = new OpenRouterRequest();
-    request.setModel("anthropic/claude-3.5-sonnet");
+    request.setModel("anthropic/claude-sonnet-4-20250522");
     request.setMaxTokens(100);
     request.setMessages(List.of(OpenRouterMessage.userMessage("Привет! Как дела?")));
 

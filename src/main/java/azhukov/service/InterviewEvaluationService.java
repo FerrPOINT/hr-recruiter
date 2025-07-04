@@ -15,7 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Сервис для фоновой оценки завершенных собеседований через Claude AI */
+/** Сервис для фоновой оценки завершенных собеседований через AI */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -126,7 +126,7 @@ public class InterviewEvaluationService {
     }
   }
 
-  /** Оценивает конкретный ответ через Claude */
+  /** Оценивает конкретный ответ через AI */
   public double evaluateAnswer(InterviewAnswer answer, Position position) {
     String answerText =
         answer.getFormattedTranscription() != null
@@ -179,7 +179,7 @@ public class InterviewEvaluationService {
         position.getTitle(), position.getLevel(), question.getText(), answerText);
   }
 
-  /** Парсит оценку из ответа Claude */
+  /** Парсит оценку из ответа AI */
   private double parseScore(String response) {
     try {
       String cleanResponse = response.trim().replaceAll("[^0-9.]", "");

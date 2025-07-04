@@ -46,8 +46,6 @@ class InterviewServiceTest {
 
   @Mock private InterviewAnswerRepository interviewAnswerRepository;
 
-  @Mock private WhisperService whisperService;
-
   @Mock private InterviewMapper interviewMapper;
 
   @Mock private CandidateMapper candidateMapper;

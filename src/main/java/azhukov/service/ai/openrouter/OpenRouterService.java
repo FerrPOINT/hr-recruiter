@@ -41,6 +41,7 @@ public class OpenRouterService implements AIService {
   // Конфигурация
   private final OpenRouterConfig openRouterConfig;
   private final RestTemplate restTemplate;
+  private final ObjectMapper objectMapper;
 
   // Статистика использования (Thread-safe)
   private final AtomicLong totalRequests = new AtomicLong(0);
@@ -275,8 +276,7 @@ public class OpenRouterService implements AIService {
   private OpenRouterResponse sendRequest(OpenRouterRequest request) throws AIServiceException {
     try {
       // Выводим сериализованный JSON запроса
-      ObjectMapper mapper = new ObjectMapper();
-      String jsonRequest = mapper.writeValueAsString(request);
+      String jsonRequest = objectMapper.writeValueAsString(request);
       System.out.println("OpenRouter request JSON: " + jsonRequest);
 
       HttpHeaders headers = createHeaders();
@@ -436,9 +436,8 @@ public class OpenRouterService implements AIService {
         throw new RuntimeException("No JSON found in response");
       }
 
-      ObjectMapper mapper = new ObjectMapper();
       PositionGenerationResponse aiResponse =
-          mapper.readValue(jsonResponse, PositionGenerationResponse.class);
+          objectMapper.readValue(jsonResponse, PositionGenerationResponse.class);
 
       // Определяем уровень позиции
       Position.Level positionLevel = Position.Level.MIDDLE; // по умолчанию
@@ -512,9 +511,8 @@ public class OpenRouterService implements AIService {
         throw new RuntimeException("No JSON found in response");
       }
 
-      ObjectMapper mapper = new ObjectMapper();
       PositionGenerationResponse aiResponse =
-          mapper.readValue(jsonResponse, PositionGenerationResponse.class);
+          objectMapper.readValue(jsonResponse, PositionGenerationResponse.class);
 
       log.info(
           "Parsed AI response: title='{}', level='{}', topics={}, questions={}",

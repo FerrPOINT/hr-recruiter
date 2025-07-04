@@ -10,6 +10,7 @@ import azhukov.repository.InterviewRepository;
 import azhukov.repository.QuestionRepository;
 import azhukov.service.ai.AIService;
 import azhukov.service.ai.AIServiceException;
+import azhukov.service.ai.elevenlabs.ElevenLabsService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * Сервис для обработки транскрибации аудио с пайплайном: Whisper (транскрибация) → Claude
+ * Сервис для обработки транскрибации аудио с пайплайном: ElevenLabs STT (транскрибация)
  * (форматирование) → БД (сохранение результата)
  */
 @Service
@@ -27,7 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 public class TranscriptionService {
 
-  private final WhisperService whisperService;
+  private final ElevenLabsService elevenLabsService;
   private final AIService aiService;
   private final InterviewRepository interviewRepository;
   private final QuestionRepository questionRepository;
@@ -78,8 +79,8 @@ public class TranscriptionService {
 
   /**
    * Пайплайн транскрибации аудио: 1. Whisper — транскрибация аудио в сырой текст (rawTranscription)
-   * 2. Claude — форматирование текста для отображения пользователю (formattedTranscription) 3.
-   * Создание нового InterviewAnswer и сохранение обоих вариантов в БД
+   * 2. Форматирование текста для отображения пользователю (formattedTranscription) 3. Создание
+   * нового InterviewAnswer и сохранение обоих вариантов в БД
    *
    * <p>ВАЖНО: Сырой текст (rawTranscription) сохраняется только для последующего анализа/отчетов,
    * на фронт не возвращается. Фронту возвращается только форматированный текст (formattedText).
@@ -102,24 +103,20 @@ public class TranscriptionService {
       validateAudioFile(audioFile);
       log.info("Audio file validation passed");
 
-      // Шаг 1: Транскрибация через Whisper
-      long whisperStart = System.currentTimeMillis();
-      String rawTranscription = whisperService.transcribeAudio(audioFile);
-      long whisperTime = System.currentTimeMillis() - whisperStart;
+      // Шаг 1: Транскрибация через ElevenLabs STT
+      long elevenLabsStart = System.currentTimeMillis();
+      String rawTranscription = elevenLabsService.transcribeAudio(audioFile);
+      long elevenLabsTime = System.currentTimeMillis() - elevenLabsStart;
 
       log.info(
-          "Whisper transcription completed in {} ms, length: {} chars",
-          whisperTime,
+          "ElevenLabs STT transcription completed in {} ms, length: {} chars",
+          elevenLabsTime,
           rawTranscription.length());
 
-      // ВРЕМЕННО ОТКЛЮЧЕНО: Claude форматирование
-      // long claudeStart = System.currentTimeMillis();
-      // String formattedText = formatTranscription(rawTranscription);
-      // long claudeTime = System.currentTimeMillis() - claudeStart;
-
-      // Используем сырой текст как отформатированный
-      String formattedText = rawTranscription;
-      long claudeTime = 0;
+      // Форматирование текста (упрощенное)
+      long claudeStart = System.currentTimeMillis();
+      String formattedText = rawTranscription; // Используем сырой текст как есть
+      long claudeTime = System.currentTimeMillis() - claudeStart;
 
       log.info(
           "Claude formatting SKIPPED (using raw text), length: {} chars", formattedText.length());
@@ -138,9 +135,9 @@ public class TranscriptionService {
       long totalTime = System.currentTimeMillis() - startTime;
 
       log.info(
-          "Total transcription pipeline completed successfully in {} ms (Whisper: {} ms, Claude: SKIPPED, DB: {} ms)",
+          "Total transcription pipeline completed successfully in {} ms (ElevenLabs: {} ms, Claude: SKIPPED, DB: {} ms)",
           totalTime,
-          whisperTime,
+          elevenLabsTime,
           dbTime);
 
       return interviewAnswerId;
@@ -221,13 +218,15 @@ public class TranscriptionService {
    * @return true если все сервисы доступны
    */
   public boolean isPipelineAvailable() {
-    boolean whisperAvailable = whisperService.isServiceAvailable();
+    boolean elevenLabsAvailable = elevenLabsService.isServiceAvailable();
     boolean claudeAvailable = aiService.isAvailable();
 
     log.info(
-        "Pipeline availability check - Whisper: {}, Claude: {}", whisperAvailable, claudeAvailable);
+        "Pipeline availability check - ElevenLabs: {}, Claude: {}",
+        elevenLabsAvailable,
+        claudeAvailable);
 
-    return whisperAvailable && claudeAvailable;
+    return elevenLabsAvailable && claudeAvailable;
   }
 
   /**

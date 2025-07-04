@@ -7,10 +7,7 @@ services:
       file: compose.yaml
       service: postgres
 
-  whisper:
-    extends:
-      file: compose.yaml
-      service: whisper
+  # ElevenLabs работает как SaaS, не требует локального контейнера
 
 volumes:
   pgdata: 

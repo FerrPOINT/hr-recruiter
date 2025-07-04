@@ -16,6 +16,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
@@ -194,6 +196,29 @@ public class GlobalExceptionHandler {
             .build();
 
     return ResponseEntity.badRequest().body(errorResponse);
+  }
+
+  /** Обработка ошибок внешних HTTP API (например, ElevenLabs) */
+  @ExceptionHandler({HttpClientErrorException.class, HttpServerErrorException.class})
+  public ResponseEntity<ErrorResponse> handleHttpClientErrorException(Exception ex) {
+    HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+    String responseBody = null;
+    if (ex instanceof HttpClientErrorException clientEx) {
+      status = HttpStatus.valueOf(clientEx.getStatusCode().value());
+      responseBody = clientEx.getResponseBodyAsString();
+    } else if (ex instanceof HttpServerErrorException serverEx) {
+      status = HttpStatus.valueOf(serverEx.getStatusCode().value());
+      responseBody = serverEx.getResponseBodyAsString();
+    }
+    log.error("External HTTP API error: status={}, body={}", status, responseBody);
+    ErrorResponse errorResponse =
+        ErrorResponse.builder()
+            .timestamp(LocalDateTime.now())
+            .status(status.value())
+            .error("External API Error")
+            .message(responseBody != null ? responseBody : ex.getMessage())
+            .build();
+    return ResponseEntity.status(status).body(errorResponse);
   }
 
   /** Обработка всех остальных исключений */

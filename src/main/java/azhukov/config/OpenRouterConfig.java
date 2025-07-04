@@ -23,7 +23,7 @@ public class OpenRouterConfig {
   private String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
 
   /** Модель по умолчанию */
-  private String model = "anthropic/claude-3.5-sonnet";
+  private String model = "anthropic/claude-sonnet-4-20250522";
 
   /** Максимальное количество токенов по умолчанию */
   private Integer maxTokens = ApplicationProperties.Constants.DEFAULT_MAX_TOKENS;
