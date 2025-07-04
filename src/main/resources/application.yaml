@@ -77,6 +77,19 @@ spring:
           starttls:
             enable: true
 
+  # Spring AI Configuration
+  ai:
+    openai:
+      api-key: ${OPEAN_AI_API_KEY:}
+      transcription:
+        api-key: ${OPEAN_AI_API_KEY:}
+      base-url: https://api.openai.com
+      audio:
+        transcription:
+          model: whisper-1
+          language: ru
+          response-format: json
+
 # Server Configuration
 server:
   port: 8080
@@ -183,6 +196,11 @@ app:
         model-id: ELEVEN_MULTILINGUAL_V2
         language: RUSSIAN
         temperature: 0.0
+      provider: OPENAI # или ELEVENLABS
+
+# Transcription Configuration
+transcription:
+  provider: OPENAI
 
 # Management Endpoints
 management:

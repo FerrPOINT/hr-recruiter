@@ -1,8 +1,6 @@
 package azhukov.controller;
 
 import azhukov.api.AiApi;
-import azhukov.mapper.AiOpenApiMapper;
-import azhukov.mapper.PositionMapper;
 import azhukov.model.GenerateQuestionsRequest;
 import azhukov.model.PositionAiGenerationRequest;
 import azhukov.model.PositionAiGenerationResponse;
@@ -12,10 +10,8 @@ import azhukov.model.Question;
 import azhukov.model.TranscribeAnswerWithAI200Response;
 import azhukov.model.TranscribeAudio200Response;
 import azhukov.service.PositionDataGenerationService;
-import azhukov.service.RewriteService;
 import azhukov.service.TranscriptionService;
 import azhukov.service.ai.AIService;
-import azhukov.service.ai.elevenlabs.ElevenLabsService;
 import azhukov.service.ai.openrouter.OpenRouterService;
 import azhukov.util.EnumUtils;
 import java.util.ArrayList;
@@ -34,12 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class AiController implements AiApi {
 
   private final AIService aiService;
-  private final RewriteService rewriteService;
-  private final ElevenLabsService elevenLabsService;
   private final TranscriptionService transcriptionService;
   private final PositionDataGenerationService positionDataGenerationService;
-  private final AiOpenApiMapper aiOpenApiMapper;
-  private final PositionMapper positionMapper;
   private final OpenRouterService openRouterService;
 
   @Override
@@ -148,7 +140,13 @@ public class AiController implements AiApi {
   @Override
   public ResponseEntity<TranscribeAudio200Response> transcribeAudio(MultipartFile audio) {
     try {
-      String transcription = elevenLabsService.processAudioFile(audio);
+      log.info(
+          "Processing audio transcription with provider: {}",
+          transcriptionService.getCurrentProvider());
+
+      // Используем TranscriptionService с переключением провайдеров
+      String transcription = transcriptionService.transcribeAudioOnly(audio);
+
       TranscribeAudio200Response response = new TranscribeAudio200Response();
       response.setTranscript(transcription);
       return ResponseEntity.ok(response);

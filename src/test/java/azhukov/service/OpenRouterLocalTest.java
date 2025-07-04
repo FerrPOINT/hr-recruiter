@@ -4,6 +4,7 @@ import azhukov.config.OpenRouterConfig;
 import azhukov.service.ai.openrouter.OpenRouterService;
 import azhukov.service.ai.openrouter.dto.OpenRouterMessage;
 import azhukov.service.ai.openrouter.dto.OpenRouterRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Disabled;
@@ -43,7 +44,8 @@ public class OpenRouterLocalTest {
     headers.set("X-Title", "HR Recruiter Backend");
     System.out.println("OpenRouter Headers: " + headers);
 
-    OpenRouterService openRouterService = new OpenRouterService(config, new RestTemplate());
+    OpenRouterService openRouterService =
+        new OpenRouterService(config, new RestTemplate(), new ObjectMapper());
 
     // Тестируем форматирование текста
     String testText =

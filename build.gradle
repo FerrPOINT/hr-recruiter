@@ -94,6 +94,9 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'com.h2database:h2'
+
+    // Spring AI OpenAI
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai:1.0.0'
 }
 
 tasks.named('test') {

@@ -118,7 +118,7 @@ public class ApplicationProperties {
 
   @Data
   public static class OpenAi {
-    private String apiKey = "${OPENAI_API_KEY:}";
+    private String apiKey = "${OPEAN_AI_API_KEY:}";
     private String model = "gpt-4";
     private int maxTokens = Constants.DEFAULT_MAX_TOKENS;
     private double temperature = Constants.DEFAULT_TEMPERATURE;

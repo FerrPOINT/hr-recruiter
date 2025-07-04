@@ -1,5 +1,6 @@
 package azhukov.service;
 
+import azhukov.config.TranscriptionProperties;
 import azhukov.entity.Interview;
 import azhukov.entity.InterviewAnswer;
 import azhukov.entity.Position;
@@ -11,6 +12,7 @@ import azhukov.repository.QuestionRepository;
 import azhukov.service.ai.AIService;
 import azhukov.service.ai.AIServiceException;
 import azhukov.service.ai.elevenlabs.ElevenLabsService;
+import azhukov.service.ai.openai.OpenAiSttService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class TranscriptionService {
 
   private final ElevenLabsService elevenLabsService;
+  private final OpenAiSttService openAiSttService;
+  private final TranscriptionProperties transcriptionProperties;
   private final AIService aiService;
   private final InterviewRepository interviewRepository;
   private final QuestionRepository questionRepository;
@@ -103,15 +107,21 @@ public class TranscriptionService {
       validateAudioFile(audioFile);
       log.info("Audio file validation passed");
 
-      // Шаг 1: Транскрибация через ElevenLabs STT
-      long elevenLabsStart = System.currentTimeMillis();
-      String rawTranscription = elevenLabsService.transcribeAudio(audioFile);
-      long elevenLabsTime = System.currentTimeMillis() - elevenLabsStart;
-
-      log.info(
-          "ElevenLabs STT transcription completed in {} ms, length: {} chars",
-          elevenLabsTime,
-          rawTranscription.length());
+      // Выбор провайдера транскрибации
+      String rawTranscription;
+      switch (transcriptionProperties.getProvider()) {
+        case ELEVENLABS -> {
+          log.info("Using ElevenLabs for transcription");
+          rawTranscription = elevenLabsService.transcribeAudio(audioFile);
+        }
+        case OPENAI -> {
+          log.info("Using OpenAI Whisper for transcription");
+          rawTranscription = openAiSttService.transcribeAudio(audioFile);
+        }
+        default ->
+            throw new IllegalStateException(
+                "Unknown transcription provider: " + transcriptionProperties.getProvider());
+      }
 
       // Форматирование текста (упрощенное)
       long claudeStart = System.currentTimeMillis();
@@ -135,9 +145,9 @@ public class TranscriptionService {
       long totalTime = System.currentTimeMillis() - startTime;
 
       log.info(
-          "Total transcription pipeline completed successfully in {} ms (ElevenLabs: {} ms, Claude: SKIPPED, DB: {} ms)",
+          "Total transcription pipeline completed successfully in {} ms (Provider: {}, DB: {} ms)",
           totalTime,
-          elevenLabsTime,
+          transcriptionProperties.getProvider(),
           dbTime);
 
       return interviewAnswerId;
@@ -329,5 +339,72 @@ public class TranscriptionService {
           e);
       throw new RuntimeException("Failed to create and save InterviewAnswer", e);
     }
+  }
+
+  /**
+   * Только транскрибация аудио без сохранения в БД (для простого endpoint)
+   *
+   * @param audioFile аудио файл
+   * @return транскрибированный текст
+   */
+  public String transcribeAudioOnly(MultipartFile audioFile) {
+    long startTime = System.currentTimeMillis();
+
+    try {
+      log.info(
+          "Starting audio transcription only for file: {} ({} bytes)",
+          audioFile.getOriginalFilename(),
+          audioFile.getSize());
+
+      // Валидация файла
+      validateAudioFile(audioFile);
+      log.info("Audio file validation passed");
+
+      // Выбор провайдера транскрибации
+      String transcription;
+      switch (transcriptionProperties.getProvider()) {
+        case ELEVENLABS -> {
+          log.info("Using ElevenLabs for transcription");
+          transcription = elevenLabsService.transcribeAudio(audioFile);
+        }
+        case OPENAI -> {
+          log.info("Using OpenAI Whisper for transcription");
+          transcription = openAiSttService.transcribeAudio(audioFile);
+        }
+        default ->
+            throw new IllegalStateException(
+                "Unknown transcription provider: " + transcriptionProperties.getProvider());
+      }
+
+      long totalTime = System.currentTimeMillis() - startTime;
+
+      log.info(
+          "Audio transcription completed successfully in {} ms (Provider: {})",
+          totalTime,
+          transcriptionProperties.getProvider());
+
+      return transcription;
+
+    } catch (Exception e) {
+      long totalTime = System.currentTimeMillis() - startTime;
+
+      log.error(
+          "Error in audio transcription for file: {} (took {} ms): {}",
+          audioFile.getOriginalFilename(),
+          totalTime,
+          e.getMessage(),
+          e);
+
+      throw new RuntimeException("Audio transcription failed", e);
+    }
+  }
+
+  /**
+   * Получает текущий провайдер транскрибации
+   *
+   * @return текущий провайдер
+   */
+  public TranscriptionProvider getCurrentProvider() {
+    return transcriptionProperties.getProvider();
   }
 }
