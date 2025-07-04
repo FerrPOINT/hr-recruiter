@@ -93,6 +93,11 @@ public class TranscriptionService {
   public Long processAudioTranscription(
       MultipartFile audioFile, Long interviewId, Long questionId) {
 
+    if (!transcriptionProperties.isEnabled()) {
+      log.warn("Transcription service is disabled");
+      throw new RuntimeException("Transcription service is disabled");
+    }
+
     long startTime = System.currentTimeMillis();
 
     try {
@@ -348,6 +353,11 @@ public class TranscriptionService {
    * @return транскрибированный текст
    */
   public String transcribeAudioOnly(MultipartFile audioFile) {
+    if (!transcriptionProperties.isEnabled()) {
+      log.warn("Transcription service is disabled");
+      return "Transcription service is disabled";
+    }
+
     long startTime = System.currentTimeMillis();
 
     try {

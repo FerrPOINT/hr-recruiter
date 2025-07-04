@@ -12,4 +12,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "transcription")
 public class TranscriptionProperties {
   private TranscriptionProvider provider = TranscriptionProvider.ELEVENLABS;
+  private boolean enabled = true;
 }

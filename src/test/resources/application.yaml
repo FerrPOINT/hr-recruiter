@@ -16,6 +16,14 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+  ai:
+    openai:
+      api-key: ${OPEAN_AI_API_KEY:sk-test-openai-key}
+      transcription:
+        api-key: ${OPEAN_AI_API_KEY:sk-test-openai-key}
+      enabled: false
+    openrouter:
+      enabled: false
 
 # OpenRouter Configuration для тестов
 openrouter:
@@ -33,14 +41,37 @@ openrouter:
   enable-request-logging: false
   enable-usage-metrics: false
 
-
-
+# AI Configuration для тестов
 ai:
+  openai:
+    api-key: ${OPEAN_AI_API_KEY:sk-test-openai-key}
+    transcription:
+      api-key: ${OPEAN_AI_API_KEY:sk-test-openai-key}
+    base-url: https://api.openai.com
+    audio:
+      transcription:
+        model: whisper-1
+        language: ru
+        response-format: json
   service:
     type: openrouter
 
+# ElevenLabs Configuration для тестов
 app:
   ai:
     transcription:
+      elevenlabs:
+        api-url: https://api.elevenlabs.io
+        api-key: ${ELEVEN_LABS_API_KEY:test-elevenlabs-key}
+        timeout: 5000
+        retry-attempts: 1
+        model-id: ELEVEN_MULTILINGUAL_V2
+        language: RUSSIAN
+        temperature: 0.0
       whisper:
-        url: http://localhost:12345/mock-whisper 
+        url: http://localhost:12345/mock-whisper
+
+# Transcription Configuration для тестов
+transcription:
+  provider: ELEVENLABS
+  enabled: false 
