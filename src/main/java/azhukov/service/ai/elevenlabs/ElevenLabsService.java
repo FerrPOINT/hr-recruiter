@@ -44,17 +44,15 @@ public class ElevenLabsService {
       // Подготавливаем multipart данные согласно официальной документации ElevenLabs
       MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
 
-      // Создаем ByteArrayResource из MultipartFile для правильной сериализации
-      byte[] audioBytes = audioFile.getBytes();
-      org.springframework.core.io.ByteArrayResource audioResource =
-          new org.springframework.core.io.ByteArrayResource(audioBytes) {
-            @Override
-            public String getFilename() {
-              return audioFile.getOriginalFilename();
-            }
-          };
+      // Добавляем MultipartFile напрямую - Spring должен правильно его сериализовать
+      body.add("audio", audioFile);
 
-      body.add("audio", audioResource);
+      log.info("Sending multipart request to ElevenLabs STT with {} parts", body.size());
+      log.info(
+          "Audio file: name={}, size={}, content-type={}",
+          audioFile.getOriginalFilename(),
+          audioFile.getSize(),
+          audioFile.getContentType());
 
       // Добавляем параметры запроса согласно документации
       body.add("model_id", properties.getModelId().getModelId());
