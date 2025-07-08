@@ -33,4 +33,8 @@
         <sqlFile path="db/changelog/changes/007-add-user-preferences.sql"/>
     </changeSet>
 
+    <changeSet id="008-voice-interview-support" author="ai">
+        <sqlFile path="db/changelog/changes/008-voice-interview-support.sql"/>
+    </changeSet>
+
 </databaseChangeLog> 

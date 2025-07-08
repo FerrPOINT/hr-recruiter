@@ -134,7 +134,7 @@ logging:
 # Security Configuration
 security:
   jwt:
-    secret: your-secret-key-here-change-in-production
+    secret: a3f4d4bf5c8d4be28c195fe343d5b68161503ecf103e42779cfe5e0f0d86c3a3
     expiration: 86400000 # 24 hours in milliseconds
   basic:
     enabled: true
@@ -196,6 +196,21 @@ app:
         model-id: ELEVEN_MULTILINGUAL_V2
         language: RUSSIAN
         temperature: 0.0
+        stability: 0.5
+        similarity-boost: 0.75
+        style: 0.0
+        max-answer-duration-seconds: 120
+        min-confidence-threshold: 0.7
+        # ElevenLabs Conversational AI Configuration
+        default-agent-id: ${ELEVEN_LABS_AGENT_ID:}
+        default-voice-id: "21m00Tcm4TlvDq8ikWAM"  # Rachel - профессиональный голос
+        default-language: "ru"
+        max-session-duration-minutes: 60
+        response-timeout-seconds: 30
+        enable-emotion-detection: true
+        enable-speaker-detection: false
+        enable-timestamps: true
+        enable-audio-quality-analysis: true
 
 # Transcription Configuration
 transcription:

@@ -84,4 +84,13 @@ public interface InterviewAnswerRepository extends BaseRepository<InterviewAnswe
   @Query(
       "SELECT AVG(ia.score) FROM InterviewAnswer ia WHERE ia.interview.id = :interviewId AND ia.score IS NOT NULL")
   Double findAverageScoreByInterviewId(@Param("interviewId") Long interviewId);
+
+  /**
+   * Проверяет, существует ли ответ на конкретный вопрос в собеседовании
+   *
+   * @param interviewId ID собеседования
+   * @param questionId ID вопроса
+   * @return true если ответ существует
+   */
+  boolean existsByInterviewIdAndQuestionId(Long interviewId, Long questionId);
 }

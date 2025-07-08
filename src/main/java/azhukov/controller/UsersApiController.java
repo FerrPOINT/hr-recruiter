@@ -3,17 +3,9 @@ package azhukov.controller;
 import azhukov.api.TeamUsersApi;
 import azhukov.entity.UserEntity;
 import azhukov.exception.ResourceNotFoundException;
-import azhukov.mapper.UserMapper;
 import azhukov.model.*;
 import azhukov.service.UserService;
 import azhukov.util.PaginationUtils;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,17 +20,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Контроллер для управления пользователями и командой Реализует интерфейс TeamUsersApi,
- * сгенерированный по OpenAPI спецификации
+ * Контроллер для управления пользователями и командой. Реализует интерфейс TeamUsersApi,
+ * сгенерированный по OpenAPI спецификации.
  */
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Team & Users", description = "Управление командой и пользователями")
-public class UsersApiController implements TeamUsersApi {
+@PreAuthorize("hasRole('ADMIN')")
+public class UsersApiController extends BaseController implements TeamUsersApi {
 
   private final UserService userService;
-  private final UserMapper userMapper;
 
   @Override
   public ResponseEntity<PaginatedResponse> listUsers(
@@ -101,119 +92,5 @@ public class UsersApiController implements TeamUsersApi {
     // Получаем всех активных пользователей как команду
     List<User> team = userService.findUsersByRole(UserEntity.Role.RECRUITER);
     return ResponseEntity.ok(team);
-  }
-
-  /** Получает список всех пользователей с пагинацией */
-  @GetMapping
-  @Operation(
-      summary = "Список пользователей",
-      description = "Возвращает список всех пользователей в системе с поддержкой пагинации")
-  @ApiResponses(
-      value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Успешный ответ",
-            content = @Content(schema = @Schema(implementation = User.class))),
-        @ApiResponse(responseCode = "403", description = "Доступ запрещен"),
-        @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера")
-      })
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<Page<User>> listUsers(
-      @Parameter(description = "Номер страницы (начиная с 0)") @RequestParam(defaultValue = "0")
-          int page,
-      @Parameter(description = "Размер страницы") @RequestParam(defaultValue = "20") int size,
-      @Parameter(description = "Поле для сортировки") @RequestParam(defaultValue = "createdAt")
-          String sort,
-      @Parameter(description = "Направление сортировки") @RequestParam(defaultValue = "desc")
-          String direction) {
-
-    log.debug(
-        "Getting users list with page={}, size={}, sort={}, direction={}",
-        page,
-        size,
-        sort,
-        direction);
-
-    Sort.Direction sortDirection =
-        "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
-    Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
-
-    Page<User> users = userService.findAllUsers(pageable);
-    return ResponseEntity.ok(users);
-  }
-
-  /** Поиск пользователей */
-  @GetMapping("/search")
-  @Operation(
-      summary = "Поиск пользователей",
-      description = "Поиск пользователей по имени или email")
-  @ApiResponses(
-      value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Успешный ответ",
-            content = @Content(schema = @Schema(implementation = User.class))),
-        @ApiResponse(responseCode = "403", description = "Доступ запрещен")
-      })
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<Page<User>> searchUsers(
-      @Parameter(description = "Поисковый запрос") @RequestParam String query,
-      @Parameter(description = "Номер страницы") @RequestParam(defaultValue = "0") int page,
-      @Parameter(description = "Размер страницы") @RequestParam(defaultValue = "20") int size) {
-
-    log.debug("Searching users with query: {}", query);
-
-    Pageable pageable = PageRequest.of(page, size);
-    Page<User> users = userService.searchUsers(query, pageable);
-    return ResponseEntity.ok(users);
-  }
-
-  /** Получает пользователей по роли */
-  @GetMapping("/by-role/{role}")
-  @Operation(
-      summary = "Пользователи по роли",
-      description = "Возвращает список пользователей с указанной ролью")
-  @ApiResponses(
-      value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Успешный ответ",
-            content = @Content(schema = @Schema(implementation = User.class))),
-        @ApiResponse(responseCode = "403", description = "Доступ запрещен")
-      })
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<List<User>> getUsersByRole(
-      @Parameter(description = "Роль пользователей") @PathVariable String role) {
-
-    log.debug("Getting users by role: {}", role);
-
-    // Преобразуем строку в enum
-    UserEntity.Role userRole = UserEntity.Role.valueOf(role.toUpperCase());
-    List<User> users = userService.findUsersByRole(userRole);
-    return ResponseEntity.ok(users);
-  }
-
-  /** Активирует/деактивирует пользователя */
-  @PatchMapping("/{id}/toggle-status")
-  @Operation(
-      summary = "Переключить статус пользователя",
-      description = "Активирует или деактивирует пользователя")
-  @ApiResponses(
-      value = {
-        @ApiResponse(
-            responseCode = "200",
-            description = "Статус изменен",
-            content = @Content(schema = @Schema(implementation = User.class))),
-        @ApiResponse(responseCode = "404", description = "Пользователь не найден"),
-        @ApiResponse(responseCode = "403", description = "Доступ запрещен")
-      })
-  @PreAuthorize("hasRole('ADMIN')")
-  public ResponseEntity<User> toggleUserStatus(
-      @Parameter(description = "ID пользователя") @PathVariable Long id) {
-
-    log.debug("Toggling status for user with ID: {}", id);
-
-    User user = userService.toggleUserStatus(id);
-    return ResponseEntity.ok(user);
   }
 }

@@ -3,7 +3,7 @@ spring:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
-    password: 
+    password:
   h2:
     console:
       enabled: true
@@ -12,6 +12,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
@@ -24,6 +25,8 @@ spring:
       enabled: false
     openrouter:
       enabled: false
+  main:
+    allow-bean-definition-overriding: true
 
 # OpenRouter Configuration для тестов
 openrouter:
@@ -70,8 +73,20 @@ app:
         temperature: 0.0
       whisper:
         url: http://localhost:12345/mock-whisper
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "*"
+    allowed-headers: "*"
+    allow-credentials: true
+  pagination:
+    default-page-size: 20
+    max-page-size: 100
 
 # Transcription Configuration для тестов
 transcription:
   provider: ELEVENLABS
-  enabled: false 
+  enabled: false
+
+server:
+  servlet:
+    context-path: /api/v1 

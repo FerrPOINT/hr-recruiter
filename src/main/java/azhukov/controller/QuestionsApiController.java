@@ -1,7 +1,6 @@
 package azhukov.controller;
 
 import azhukov.api.QuestionsApi;
-import azhukov.mapper.QuestionMapper;
 import azhukov.model.BaseQuestionFields;
 import azhukov.model.ListPositionQuestions200Response;
 import azhukov.model.PaginatedResponse;
@@ -14,10 +13,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -27,10 +25,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class QuestionsApiController implements QuestionsApi {
+@PreAuthorize("hasRole('ADMIN')")
+public class QuestionsApiController extends BaseController implements QuestionsApi {
 
   private final QuestionService questionService;
-  private final QuestionMapper questionMapper;
 
   @Override
   public ResponseEntity<PaginatedResponse> getAllQuestions(
@@ -74,8 +72,11 @@ public class QuestionsApiController implements QuestionsApi {
     List<azhukov.model.Question> questions = questionService.getQuestionsByPosition(positionId);
 
     // Создаем Page объект для использования с PaginationUtils
-    Page<azhukov.model.Question> questionPage =
-        new PageImpl<>(questions, PageRequest.of(0, questions.size()), questions.size());
+    org.springframework.data.domain.Page<azhukov.model.Question> questionPage =
+        new org.springframework.data.domain.PageImpl<>(
+            questions,
+            org.springframework.data.domain.PageRequest.of(0, questions.size()),
+            questions.size());
 
     ListPositionQuestions200Response response = new ListPositionQuestions200Response();
     PaginationUtils.fillPaginationFields(questionPage, response);

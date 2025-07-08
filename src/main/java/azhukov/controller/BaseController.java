@@ -2,152 +2,70 @@ package azhukov.controller;
 
 import azhukov.exception.ResourceNotFoundException;
 import azhukov.exception.ValidationException;
-import azhukov.service.BaseService;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
- * Базовый контроллер с общими методами для всех контроллеров. Предоставляет стандартные CRUD
- * операции и обработку ошибок.
- *
- * @param <T> Тип сущности
- * @param <S> Тип сервиса
+ * Базовый контроллер с общими утилитами для всех контроллеров. Предоставляет стандартные методы для
+ * получения текущего пользователя и обработки общих ошибок.
  */
 @Slf4j
-public abstract class BaseController<T, S extends BaseService<T, Long, ?>> {
+public abstract class BaseController {
 
-  protected final S service;
-
-  protected BaseController(S service) {
-    this.service = service;
+  /** Получает email текущего аутентифицированного пользователя */
+  protected String getCurrentUserEmail() {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authentication.getName();
   }
 
-  /** Получает сущность по ID */
-  @GetMapping("/{id}")
-  public ResponseEntity<T> getById(@PathVariable Long id) {
-    log.debug("Getting entity by id: {}", id);
-    try {
-      T entity = service.findByIdOrThrow(id);
-      return ResponseEntity.ok(entity);
-    } catch (ResourceNotFoundException e) {
-      log.warn("Entity not found with id: {}", id);
+  /** Обрабатывает общие исключения и возвращает соответствующий HTTP статус */
+  protected ResponseEntity<Void> handleException(Exception e, String operation) {
+    if (e instanceof ResourceNotFoundException) {
+      log.warn("Resource not found during {}: {}", operation, e.getMessage());
       return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-      log.error("Error getting entity by id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Получает все сущности */
-  @GetMapping
-  public ResponseEntity<List<T>> getAll() {
-    log.debug("Getting all entities");
-    try {
-      List<T> entities = service.findAll();
-      return ResponseEntity.ok(entities);
-    } catch (Exception e) {
-      log.error("Error getting all entities", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Получает все сущности с пагинацией */
-  @GetMapping("/page")
-  public ResponseEntity<Page<T>> getAllPaginated(Pageable pageable) {
-    log.debug("Getting all entities with pagination: {}", pageable);
-    try {
-      Page<T> page = service.findAll(pageable);
-      return ResponseEntity.ok(page);
-    } catch (Exception e) {
-      log.error("Error getting paginated entities", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Создает новую сущность */
-  @PostMapping
-  public ResponseEntity<T> create(@RequestBody T entity) {
-    log.debug("Creating new entity: {}", entity);
-    try {
-      T savedEntity = service.save(entity);
-      return ResponseEntity.status(HttpStatus.CREATED).body(savedEntity);
-    } catch (ValidationException e) {
-      log.warn("Validation error creating entity: {}", e.getMessage());
+    } else if (e instanceof ValidationException) {
+      log.warn("Validation error during {}: {}", operation, e.getMessage());
       return ResponseEntity.badRequest().build();
-    } catch (Exception e) {
-      log.error("Error creating entity", e);
+    } else {
+      log.error("Error during {}: {}", operation, e.getMessage(), e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
   }
 
-  /** Обновляет сущность по ID */
-  @PutMapping("/{id}")
-  public ResponseEntity<T> update(@PathVariable Long id, @RequestBody T entity) {
-    log.debug("Updating entity with id: {}", id);
-    try {
-      T updatedEntity = service.update(id, entity);
-      return ResponseEntity.ok(updatedEntity);
-    } catch (ResourceNotFoundException e) {
-      log.warn("Entity not found for update with id: {}", id);
+  /** Обрабатывает общие исключения и возвращает соответствующий HTTP статус с телом ответа */
+  protected <T> ResponseEntity<T> handleExceptionWithBody(
+      Exception e, String operation, T defaultBody) {
+    if (e instanceof ResourceNotFoundException) {
+      log.warn("Resource not found during {}: {}", operation, e.getMessage());
       return ResponseEntity.notFound().build();
-    } catch (ValidationException e) {
-      log.warn("Validation error updating entity: {}", e.getMessage());
+    } else if (e instanceof ValidationException) {
+      log.warn("Validation error during {}: {}", operation, e.getMessage());
       return ResponseEntity.badRequest().build();
-    } catch (Exception e) {
-      log.error("Error updating entity with id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    } else {
+      log.error("Error during {}: {}", operation, e.getMessage(), e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(defaultBody);
     }
   }
 
-  /** Удаляет сущность по ID */
-  @DeleteMapping("/{id}")
-  public ResponseEntity<Void> delete(@PathVariable Long id) {
-    log.debug("Deleting entity with id: {}", id);
-    try {
-      service.deleteById(id);
-      return ResponseEntity.noContent().build();
-    } catch (ResourceNotFoundException e) {
-      log.warn("Entity not found for deletion with id: {}", id);
-      return ResponseEntity.notFound().build();
-    } catch (Exception e) {
-      log.error("Error deleting entity with id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+  /** Проверяет, что строка не пустая и не равна "all" */
+  protected String normalizeFilter(String filter) {
+    if (filter == null || "all".equals(filter) || filter.trim().isEmpty()) {
+      return null;
     }
+    return filter.trim();
   }
 
-  /** Проверяет существование сущности по ID */
-  @GetMapping("/{id}/exists")
-  public ResponseEntity<Boolean> exists(@PathVariable Long id) {
-    log.debug("Checking existence of entity with id: {}", id);
-    try {
-      boolean exists = service.existsById(id);
-      return ResponseEntity.ok(exists);
-    } catch (Exception e) {
-      log.error("Error checking existence of entity with id: {}", id, e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Подсчитывает количество сущностей */
-  @GetMapping("/count")
-  public ResponseEntity<Long> count() {
-    log.debug("Counting entities");
-    try {
-      long count = service.count();
-      return ResponseEntity.ok(count);
-    } catch (Exception e) {
-      log.error("Error counting entities", e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
-
-  /** Получает сервис для специфических операций */
-  protected S getService() {
-    return service;
+  /** Создает Pageable объект с сортировкой */
+  protected org.springframework.data.domain.Pageable createPageable(
+      int page, int size, String sort) {
+    org.springframework.data.domain.Sort.Direction direction =
+        "asc".equalsIgnoreCase(sort)
+            ? org.springframework.data.domain.Sort.Direction.ASC
+            : org.springframework.data.domain.Sort.Direction.DESC;
+    return org.springframework.data.domain.PageRequest.of(
+        page, size, org.springframework.data.domain.Sort.by(direction, sort));
   }
 }

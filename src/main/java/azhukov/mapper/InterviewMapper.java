@@ -82,6 +82,7 @@ public interface InterviewMapper extends CommonMapper {
     return switch (result) {
       case SUCCESSFUL -> InterviewResultEnum.SUCCESSFUL;
       case UNSUCCESSFUL -> InterviewResultEnum.UNSUCCESSFUL;
+      case ERROR -> InterviewResultEnum.ERROR;
     };
   }
 
@@ -92,6 +93,7 @@ public interface InterviewMapper extends CommonMapper {
     return switch (result) {
       case SUCCESSFUL -> Interview.Result.SUCCESSFUL;
       case UNSUCCESSFUL -> Interview.Result.UNSUCCESSFUL;
+      case ERROR -> Interview.Result.ERROR;
     };
   }
 

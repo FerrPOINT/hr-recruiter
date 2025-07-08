@@ -1,21 +1,38 @@
 package azhukov.config;
 
+import azhukov.exception.RestAccessDeniedHandler;
+import azhukov.exception.RestAuthenticationEntryPoint;
+import azhukov.service.JwtService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /** Конфигурация безопасности приложения. Настраивает аутентификацию, авторизацию и CORS. */
 @Configuration
@@ -25,6 +42,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final ApplicationProperties applicationProperties;
+  private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+  private final RestAccessDeniedHandler restAccessDeniedHandler;
+  private final JwtService jwtService;
+  private final JwtFilter jwtFilter;
 
   /** Настройка цепочки фильтров безопасности */
   @Bean
@@ -44,10 +65,10 @@ public class SecurityConfig {
         .authorizeHttpRequests(
             authz ->
                 authz
-                    // Публичные эндпоинты (с учетом context-path /api/v1)
-                    .requestMatchers("/api/v1/auth/**")
+                    // Публичные эндпоинты
+                    .requestMatchers("/auth/**")
                     .permitAll()
-                    .requestMatchers("/api/v1/actuator/**")
+                    .requestMatchers("/candidates/auth")
                     .permitAll()
                     .requestMatchers("/actuator/**")
                     .permitAll()
@@ -74,7 +95,15 @@ public class SecurityConfig {
                     .frameOptions(frame -> frame.disable()) // Для H2 консоли
                     .contentTypeOptions(contentType -> {})
                     .httpStrictTransportSecurity(
-                        hstsConfig -> hstsConfig.maxAgeInSeconds(31536000)));
+                        hstsConfig -> hstsConfig.maxAgeInSeconds(31536000)))
+
+        // Настройка exception handling для единого JSON-ответа
+        .exceptionHandling(
+            eh ->
+                eh.authenticationEntryPoint(restAuthenticationEntryPoint)
+                    .accessDeniedHandler(restAccessDeniedHandler));
+
+    http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }
@@ -126,5 +155,45 @@ public class SecurityConfig {
   public AuthenticationManager authenticationManager(
       AuthenticationConfiguration authenticationConfiguration) throws Exception {
     return authenticationConfiguration.getAuthenticationManager();
+  }
+}
+
+@Component
+@RequiredArgsConstructor
+class JwtFilter extends OncePerRequestFilter {
+  private final JwtService jwtService;
+
+  @Override
+  protected void doFilterInternal(
+      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+      throws ServletException, IOException {
+    String authHeader = request.getHeader("Authorization");
+
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+      String token = authHeader.substring(7);
+
+      if (jwtService.validateToken(token)) {
+        String username = jwtService.extractUsername(token);
+        if (username != null) {
+          List<String> authorities = new ArrayList<>();
+          if (jwtService.isAdminToken(token)) {
+            authorities.add("ROLE_ADMIN");
+          } else if (jwtService.isCandidateToken(token)) {
+            authorities.add("ROLE_CANDIDATE");
+          }
+
+          UsernamePasswordAuthenticationToken authentication =
+              new UsernamePasswordAuthenticationToken(
+                  username,
+                  null,
+                  authorities.stream()
+                      .map(authority -> new SimpleGrantedAuthority(authority))
+                      .collect(Collectors.toList()));
+          SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+      }
+    }
+
+    filterChain.doFilter(request, response);
   }
 }

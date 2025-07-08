@@ -4,6 +4,8 @@ import azhukov.entity.Candidate;
 import azhukov.entity.Position;
 import azhukov.exception.ResourceNotFoundException;
 import azhukov.mapper.CandidateMapper;
+import azhukov.model.CandidateAuthRequest;
+import azhukov.model.CandidateAuthResponse;
 import azhukov.repository.CandidateRepository;
 import azhukov.repository.PositionRepository;
 import java.util.List;
@@ -23,6 +25,7 @@ public class CandidateService {
   private final CandidateRepository candidateRepository;
   private final PositionRepository positionRepository;
   private final CandidateMapper candidateMapper;
+  private final JwtService jwtService;
 
   /** Получает всех кандидатов с пагинацией */
   @Transactional(readOnly = true)
@@ -130,5 +133,56 @@ public class CandidateService {
   public void deleteCandidate(Long id) {
     log.debug("Deleting candidate: {}", id);
     candidateRepository.deleteById(id);
+  }
+
+  /** Находит или создает кандидата по email/телефону */
+  @Transactional
+  public Candidate findOrCreateCandidate(
+      String firstName, String lastName, String email, String phone, Long positionId) {
+    Candidate candidate = null;
+    if (email != null && !email.isBlank()) {
+      candidate = candidateRepository.findByEmail(email);
+    }
+    if (candidate == null && phone != null && !phone.isBlank()) {
+      candidate = candidateRepository.findByPhone(phone);
+    }
+    if (candidate != null) {
+      return candidate;
+    }
+    // Создать нового кандидата
+    Position position =
+        positionRepository
+            .findById(positionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Position not found: " + positionId));
+    candidate =
+        Candidate.builder()
+            .firstName(firstName)
+            .lastName(lastName)
+            .email(email)
+            .phone(phone)
+            .position(position)
+            .status(Candidate.Status.NEW)
+            .build();
+    return candidateRepository.save(candidate);
+  }
+
+  public CandidateAuthResponse findOrCreateCandidateAndJwt(CandidateAuthRequest request) {
+    // 1. Найти или создать кандидата
+    Candidate candidateEntity =
+        findOrCreateCandidate(
+            request.getFirstName(),
+            request.getLastName(),
+            request.getEmail(),
+            request.getPhone(),
+            request.getPositionId());
+    // 2. Сгенерировать JWT
+    String token = jwtService.generateCandidateToken(candidateEntity);
+    // 3. Преобразовать entity в DTO
+    azhukov.model.Candidate candidateDto = candidateMapper.toDto(candidateEntity);
+    // 4. Вернуть DTO-ответ
+    CandidateAuthResponse response = new CandidateAuthResponse();
+    response.setToken(token);
+    response.setCandidate(candidateDto);
+    return response;
   }
 }

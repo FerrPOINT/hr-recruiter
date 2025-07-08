@@ -5,6 +5,8 @@ info:
   description: |
     Полная OpenAPI спецификация для платформы автоматизации.
     Включает все основные сущности, бизнес-операции, заглушки для AI и медиа, а также примеры для быстрой интеграции.
+    
+    **Аутентификация только через JWT (Bearer). Basic Auth не поддерживается.**
 servers:
   - url: http://localhost:8080/api/v1
     description: Local server
@@ -40,6 +42,8 @@ paths:
       tags:
         - Auth
       summary: Вход пользователя
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -60,6 +64,8 @@ paths:
       tags:
         - Auth
       summary: Выход пользователя
+      security:
+        - AdminAuth: []
       responses:
         '204':
           description: Успешный выход
@@ -70,6 +76,8 @@ paths:
       tags:
         - Account
       summary: Получить профиль текущего пользователя
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: Профиль пользователя
@@ -82,6 +90,8 @@ paths:
       tags:
         - Account
       summary: Обновить профиль текущего пользователя
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -102,6 +112,8 @@ paths:
       tags:
         - Positions
       summary: Получить список вакансий
+      security:
+        - AdminAuth: []
       parameters:
         - in: query
           name: status
@@ -153,6 +165,8 @@ paths:
       tags:
         - Positions
       summary: Создать новую вакансию
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -173,6 +187,8 @@ paths:
       tags:
         - Positions
       summary: Получить вакансию по ID
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -192,6 +208,8 @@ paths:
       tags:
         - Positions
       summary: Обновить вакансию по ID
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -217,6 +235,8 @@ paths:
       tags:
         - Positions
       summary: Частично обновить вакансию (для архивации)
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -248,6 +268,8 @@ paths:
       tags:
         - Positions
       summary: Получить публичную ссылку на вакансию
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -272,6 +294,8 @@ paths:
       tags:
         - Positions
       summary: Получить статистику по вакансии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -293,6 +317,8 @@ paths:
       tags:
         - Questions
       summary: Список вопросов по вакансии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: positionId
@@ -345,6 +371,8 @@ paths:
       operationId: getPositionQuestionsWithSettings
       tags:
         - Questions
+      security:
+        - AdminAuth: []
       summary: Получить вопросы с настройками проведения собеседования
       description: Возвращает список вопросов для вакансии вместе с настройками проведения собеседования (время ответа, язык, сохранение аудио/видео и т.д.)
       parameters:
@@ -371,6 +399,8 @@ paths:
       tags:
         - Questions
       summary: Получить список всех вопросов
+      security:
+        - AdminAuth: []
       parameters:
         - in: query
           name: page
@@ -404,6 +434,8 @@ paths:
       tags:
         - Questions
       summary: Получить вопрос по ID
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -425,6 +457,8 @@ paths:
       tags:
         - Questions
       summary: Обновить вопрос
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -450,6 +484,8 @@ paths:
       tags:
         - Questions
       summary: Удалить вопрос по ID
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -467,6 +503,8 @@ paths:
       tags:
         - Candidates
       summary: Список кандидатов по вакансии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: positionId
@@ -488,6 +526,8 @@ paths:
       tags:
         - Candidates
       summary: Добавить кандидата к вакансии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: positionId
@@ -515,6 +555,8 @@ paths:
       tags:
         - Candidates
       summary: Получить кандидата
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -534,6 +576,8 @@ paths:
       tags:
         - Candidates
       summary: Обновить кандидата
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -559,6 +603,8 @@ paths:
       tags:
         - Candidates
       summary: Удалить кандидата по ID
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -576,6 +622,8 @@ paths:
       tags:
         - Interviews
       summary: Создать и начать интервью
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: candidateId
@@ -597,6 +645,8 @@ paths:
       tags:
         - Interviews
       summary: Список собеседований по вакансии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: positionId
@@ -620,6 +670,8 @@ paths:
       tags:
         - Interviews
       summary: Получить список всех собеседований
+      security:
+        - AdminAuth: []
       description: Возвращает список всех собеседований в системе.
       parameters:
         - in: query
@@ -668,13 +720,9 @@ paths:
       operationId: getInterview
       tags:
         - Interviews
-      summary: Получить информацию о собеседовании и собеседнике
-      description: |
-        Возвращает информацию о собеседовании включая:
-        - Информацию о кандидате
-        - Информацию о вакансии
-        - Список вопросов
-        - Статус собеседования
+      summary: Получить информацию о собеседовании
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -684,28 +732,13 @@ paths:
             format: int64
       responses:
         '200':
-          description: Информация о собеседовании
+          description: OK
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  interview:
-                    $ref: '#/components/schemas/Interview'
-                  candidate:
-                    $ref: '#/components/schemas/Candidate'
-                  position:
-                    $ref: '#/components/schemas/Position'
-                  questions:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Question'
+                $ref: '#/components/schemas/GetInterview200Response'
         '404':
           description: Собеседование не найдено
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /interviews/{id}/answer:
     post:
@@ -713,6 +746,8 @@ paths:
       tags:
         - Interviews
       summary: Отправить ответ на вопрос
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: id
@@ -734,12 +769,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/Interview'
 
+  /interviews/{id}/start:
+    post:
+      operationId: startInterview
+      tags:
+        - Interviews
+      summary: Начать интервью
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Интервью успешно начато
+
+  /interviews/{id}/finish:
+    post:
+      operationId: finishInterview
+      tags:
+        - Interviews
+      summary: Завершить интервью
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Интервью успешно завершено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interview'
+
   /branding:
     get:
       operationId: getBranding
       tags:
         - Settings
       summary: Получить настройки брендинга
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -752,6 +831,8 @@ paths:
       tags:
         - Settings
       summary: Обновить настройки брендинга
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -772,6 +853,8 @@ paths:
       tags:
         - Team & Users
       summary: Список пользователей
+      security:
+        - AdminAuth: []
       parameters:
         - in: query
           name: page
@@ -1024,29 +1107,7 @@ paths:
                     type: string
                     description: Транскрибированный текст
 
-  /ai/generate-questions:
-    post:
-      operationId: generateQuestions
-      tags:
-        - AI
-      summary: Генерировать вопросы для собеседования
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GenerateQuestionsRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Question'
-        '500':
-          description: Internal Server Error
+
 
   /ai/generate-position:
     post:
@@ -1082,6 +1143,8 @@ paths:
       tags:
         - Analytics & Reports
       summary: Статистика по вакансиям
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1098,6 +1161,8 @@ paths:
       tags:
         - Analytics & Reports
       summary: Статистика по кандидатам
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1112,6 +1177,8 @@ paths:
       tags:
         - Analytics & Reports
       summary: Статистика по интервью
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1123,6 +1190,8 @@ paths:
   /archive:
     get:
       summary: Архив
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1136,6 +1205,8 @@ paths:
   /learn:
     get:
       summary: Обучающие материалы
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1159,6 +1230,8 @@ paths:
       tags:
         - Settings
       summary: Информация о тарифе пользователя
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1178,6 +1251,8 @@ paths:
       tags:
         - Team & Users
       summary: Получить информацию о команде
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1194,6 +1269,8 @@ paths:
       tags:
         - Account
       summary: Получить дополнительную информацию о пользователе
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1211,6 +1288,8 @@ paths:
       tags:
         - AI
       summary: Сгенерировать данные для вакансии на основе описания
+      security:
+        - AdminAuth: []
       requestBody:
         required: true
         content:
@@ -1243,6 +1322,8 @@ paths:
       tags:
         - Interviews
       summary: Чек-лист для интервью
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1262,6 +1343,8 @@ paths:
       tags:
         - Interviews
       summary: Информация для приглашения
+      security:
+        - AdminAuth: []
       responses:
         '200':
           description: OK
@@ -1355,6 +1438,8 @@ paths:
       tags:
         - Candidates
       summary: Получить список всех кандидатов
+      security:
+        - AdminAuth: []
       parameters:
         - in: query
           name: positionId
@@ -1395,6 +1480,176 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CandidatesPaginatedResponse'
+
+  # Voice Interview Endpoints
+  /interviews/{interviewId}/voice/session:
+    post:
+      operationId: createVoiceSession
+      tags:
+        - Voice Interviews
+      summary: Создать голосовую сессию для интервью
+      description: Создает голосовую сессию в ElevenLabs Conversational AI для проведения голосового интервью
+      parameters:
+        - in: path
+          name: interviewId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: Голосовая сессия создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceSessionResponse'
+        '400':
+          description: Некорректный запрос
+        '404':
+          description: Интервью не найдено
+        '500':
+          description: Ошибка сервера
+
+  /interviews/{interviewId}/voice/next-question:
+    get:
+      operationId: getNextQuestion
+      tags:
+        - Voice Interviews
+      summary: Получить следующий вопрос для голосовой сессии
+      description: Возвращает следующий вопрос для голосового интервью. Вызывается ElevenLabs агентом через webhook.
+      parameters:
+        - in: path
+          name: interviewId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceMessage'
+        '404':
+          description: Интервью не найдено
+        '500':
+          description: Ошибка сервера
+
+  /interviews/{interviewId}/voice/answer:
+    post:
+      operationId: saveVoiceAnswer
+      tags:
+        - Voice Interviews
+      summary: Сохранить голосовой ответ кандидата
+      description: Сохраняет транскрибированный голосовой ответ кандидата на вопрос
+      parameters:
+        - in: path
+          name: interviewId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: questionId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceMessage'
+      responses:
+        '201':
+          description: Ответ сохранен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewAnswer'
+        '400':
+          description: Некорректный запрос
+        '404':
+          description: Интервью или вопрос не найдены
+        '500':
+          description: Ошибка сервера
+
+  /interviews/{interviewId}/voice/end:
+    post:
+      operationId: endVoiceSession
+      tags:
+        - Voice Interviews
+      summary: Завершить голосовую сессию
+      description: Завершает голосовую сессию и освобождает ресурсы
+      parameters:
+        - in: path
+          name: interviewId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Сессия завершена
+        '404':
+          description: Интервью не найдено
+        '500':
+          description: Ошибка сервера
+
+  /interviews/{interviewId}/voice/status:
+    get:
+      operationId: getVoiceSessionStatus
+      tags:
+        - Voice Interviews
+      summary: Получить статус голосовой сессии
+      description: Возвращает текущий статус голосовой сессии
+      parameters:
+        - in: path
+          name: interviewId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceSessionStatus'
+        '404':
+          description: Интервью не найдено
+        '500':
+          description: Ошибка сервера
+
+  /candidates/auth:
+    post:
+      operationId: authCandidate
+      tags:
+        - Candidates
+      summary: Авторизация кандидата (find-or-create и JWT)
+      description: |
+        Находит или создает кандидата по имени, email, телефону и позиции. Возвращает JWT для кандидата и его DTO.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateAuthRequest'
+      responses:
+        '200':
+          description: Успешная авторизация кандидата
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateAuthResponse'
+        '400':
+          description: Неверные параметры запроса
+        '500':
+          description: Внутренняя ошибка сервера
+      security: []
 
 components:
   schemas:
@@ -2068,6 +2323,7 @@ components:
       enum:
         - successful
         - unsuccessful
+        - error
     
     QuestionTypeEnum:
       type: string
@@ -2291,18 +2547,6 @@ components:
           format: int64
           description: ID ответа на интервью
 
-    TranscribeInterviewAnswerRequest:
-      type: object
-      properties:
-        questionId:
-          type: integer
-          format: int64
-        audioData:
-          type: string
-          format: binary
-          description: Аудио данные для транскрибации
-      required: [questionId, audioData]
-
     # AI-генерация вакансии
     PositionAiGenerationRequest:
       type: object
@@ -2373,20 +2617,102 @@ components:
           example: 1
       required: [text, type, order]
 
-    GenerateQuestionsRequest:
+
+
+    GetInterview200Response:
       type: object
       properties:
-        positionDescription:
+        interview:
+          $ref: '#/components/schemas/Interview'
+        candidate:
+          $ref: '#/components/schemas/Candidate'
+        position:
+          $ref: '#/components/schemas/Position'
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+
+    VoiceSessionResponse:
+      type: object
+      properties:
+        sessionId:
           type: string
-      required: [positionDescription]
+          description: "ID голосовой сессии"
+        status:
+          type: string
+          description: "Статус голосовой сессии"
+          example: "created"
+
+    VoiceMessage:
+      type: object
+      properties:
+        text:
+          type: string
+          description: "Текст сообщения"
+        audio:
+          type: string
+          format: binary
+          description: "Аудио сообщения"
+
+    VoiceSessionStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Статус голосовой сессии"
+          example: "active"
+
+    CandidateAuthRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+        - positionId
+      properties:
+        firstName:
+          type: string
+          example: Иван
+        lastName:
+          type: string
+          example: Иванов
+        email:
+          type: string
+          format: email
+          example: ivan@example.com
+        phone:
+          type: string
+          example: "+79991234567"
+        positionId:
+          type: integer
+          format: int64
+          example: 123
+
+    CandidateAuthResponse:
+      type: object
+      required:
+        - token
+        - candidate
+      properties:
+        token:
+          type: string
+          description: JWT токен для авторизации кандидата
+        candidate:
+          $ref: '#/components/schemas/Candidate'
 
   securitySchemes:
-    basicAuth:
+    CandidateAuth:
       type: http
-      scheme: basic
+      scheme: bearer
+      bearerFormat: JWT
+    AdminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
-security:
-  - basicAuth: []
+# Глобальные настройки security убраны - каждый метод определяет свою авторизацию
 
 x-readme:
   explorer-enabled: true

@@ -5,7 +5,6 @@ import azhukov.entity.Interview;
 import azhukov.entity.InterviewAnswer;
 import azhukov.entity.Position;
 import azhukov.entity.Question;
-import azhukov.repository.CandidateRepository;
 import azhukov.repository.InterviewAnswerRepository;
 import azhukov.repository.InterviewRepository;
 import azhukov.repository.QuestionRepository;
@@ -37,8 +36,6 @@ public class TranscriptionService {
   private final InterviewRepository interviewRepository;
   private final QuestionRepository questionRepository;
   private final InterviewAnswerRepository interviewAnswerRepository;
-  private final CandidateRepository candidateRepository;
-  private final InterviewService interviewService;
 
   private static final String FORMATTING_PROMPT =
       """
@@ -128,13 +125,8 @@ public class TranscriptionService {
                 "Unknown transcription provider: " + transcriptionProperties.getProvider());
       }
 
-      // Форматирование текста (упрощенное)
-      long claudeStart = System.currentTimeMillis();
-      String formattedText = rawTranscription; // Используем сырой текст как есть
-      long claudeTime = System.currentTimeMillis() - claudeStart;
-
-      log.info(
-          "Claude formatting SKIPPED (using raw text), length: {} chars", formattedText.length());
+      // Форматирование текста через AI
+      String formattedText = formatTranscription(rawTranscription);
 
       // Шаг 3: Создание InterviewAnswer и сохранение в БД
       long dbStart = System.currentTimeMillis();
@@ -309,15 +301,6 @@ public class TranscriptionService {
           interviewId,
           position.getTitle());
 
-      // Дополнительная проверка сохранения
-      InterviewAnswer savedAnswer = interviewAnswerRepository.findById(answer.getId()).orElse(null);
-      if (savedAnswer != null) {
-        log.info(
-            "InterviewAnswer {} successfully saved and retrieved from database", answer.getId());
-      } else {
-        log.error("InterviewAnswer {} was not found in database after save!", answer.getId());
-      }
-
       // Проверяем, это последний вопрос?
       int totalQuestions = position.getQuestionsCount();
       long answeredQuestions = interviewAnswerRepository.countByInterviewId(interviewId);
@@ -325,23 +308,15 @@ public class TranscriptionService {
       log.info(
           "Interview {}: answered {}/{} questions", interviewId, answeredQuestions, totalQuestions);
 
-      if (answeredQuestions >= totalQuestions) {
-        // Это последний ответ - завершаем собеседование атомарно
-        log.info(
-            "Last answer submitted for interview: {}, finishing interview (atomic)", interviewId);
-        interview.setStatus(Interview.Status.FINISHED); // или нужный финальный статус
-        interview.setFinishedAt(LocalDateTime.now());
-        interviewRepository.save(interview);
-        log.info("Interview {} marked as FINISHED", interviewId);
-      }
-
       return answer.getId();
     } catch (Exception e) {
       log.error(
-          "Failed to create and save InterviewAnswer for interview ID: {} question ID: {}",
+          "Failed to create and save InterviewAnswer for interview ID: {} question ID: {}: {}",
           interviewId,
           questionId,
+          e.getMessage(),
           e);
+
       throw new RuntimeException("Failed to create and save InterviewAnswer", e);
     }
   }

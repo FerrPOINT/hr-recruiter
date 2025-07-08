@@ -34,7 +34,14 @@ public class CustomUserDetailsService implements UserDetailsService {
                 () ->
                     new UsernameNotFoundException("Пользователь с email " + email + " не найден"));
 
+    log.info(
+        "[CustomUserDetailsService] Found user: email={}, active={}, hash={}",
+        user.getEmail(),
+        user.isActive(),
+        user.getPassword());
+
     if (!user.isActive()) {
+      log.warn("[CustomUserDetailsService] User {} is not active", email);
       throw new UsernameNotFoundException("Пользователь с email " + email + " неактивен");
     }
 

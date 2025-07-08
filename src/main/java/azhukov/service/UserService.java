@@ -280,4 +280,11 @@ public class UserService extends BaseService<UserEntity, Long, UserRepository> {
   public boolean existsByEmail(String email) {
     return repository.existsByEmail(email);
   }
+
+  @Transactional(readOnly = true)
+  public UserEntity getUserEntityByEmail(String email) {
+    return repository
+        .findByEmail(email)
+        .orElseThrow(() -> new ResourceNotFoundException("User not found: " + email));
+  }
 }

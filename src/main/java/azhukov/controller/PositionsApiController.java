@@ -12,8 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -23,43 +22,43 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class PositionsApiController implements PositionsApi {
+public class PositionsApiController extends BaseController implements PositionsApi {
 
   private final PositionService positionService;
   private final PositionMapper positionMapper;
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Position> createPosition(PositionCreateRequest positionCreateRequest) {
     log.debug("Creating new position: {}", positionCreateRequest);
 
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String userEmail = authentication.getName();
-
+    String userEmail = getCurrentUserEmail();
     Position createdPosition = positionService.createPosition(positionCreateRequest, userEmail);
 
     return ResponseEntity.status(HttpStatus.CREATED).body(createdPosition);
   }
 
   @Override
+  @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
   public ResponseEntity<Position> getPosition(Long id) {
     log.debug("Getting position by id: {}", id);
 
     Position position = positionService.getPositionById(id);
-
     return ResponseEntity.ok(position);
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Position> updatePosition(
       Long id, PositionUpdateRequest positionUpdateRequest) {
     log.debug("Updating position with id: {}", id);
 
     Position updatedPosition = positionService.updatePosition(id, positionUpdateRequest);
-
     return ResponseEntity.ok(updatedPosition);
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<Position> partialUpdatePosition(
       Long id, PartialUpdatePositionRequest partialUpdatePositionRequest) {
     log.debug("Partially updating position with id: {}", id);
@@ -71,6 +70,7 @@ public class PositionsApiController implements PositionsApi {
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<GetPositionPublicLink200Response> getPositionPublicLink(Long id) {
     log.debug("Getting public link for position with id: {}", id);
     String publicLink = positionService.getPositionPublicLink(id);
@@ -80,6 +80,7 @@ public class PositionsApiController implements PositionsApi {
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<PositionStats> getPositionStats(Long id) {
     log.debug("Getting stats for position with id: {}", id);
 
@@ -90,6 +91,7 @@ public class PositionsApiController implements PositionsApi {
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<PaginatedResponse> listPositions(
       Optional<PositionStatusEnum> status,
       Optional<String> search,
@@ -106,34 +108,19 @@ public class PositionsApiController implements PositionsApi {
         size,
         sort);
 
-    Long pageNum = page.orElse(0L);
-    Long pageSize = size.orElse(20L);
     Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
-
-    // Получаем email текущего пользователя
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String userEmail = authentication.getName();
+    String userEmail = getCurrentUserEmail();
 
     // Обрабатываем параметры поиска и владельца
-    String searchTerm = search.orElse(null);
-    String ownerFilter = owner.orElse("all");
-
-    // Если search равен "all" или пустой, устанавливаем в null
-    if (searchTerm != null && ("all".equals(searchTerm) || searchTerm.trim().isEmpty())) {
-      searchTerm = null;
-    }
-
-    // Если owner равен "all" или пустой, устанавливаем в "all"
-    if (ownerFilter != null && ("all".equals(ownerFilter) || ownerFilter.trim().isEmpty())) {
-      ownerFilter = "all";
-    }
+    String searchTerm = search.filter(s -> !"all".equals(s) && !s.trim().isEmpty()).orElse(null);
+    String ownerFilter = owner.filter(o -> !"all".equals(o) && !o.trim().isEmpty()).orElse("all");
 
     Page<Position> positions =
         positionService.getPositionsPage(
             status.orElse(null), searchTerm, ownerFilter, userEmail, pageable);
 
     PaginatedResponse response = new PaginatedResponse();
-    response = PaginationUtils.fillPaginationFields(positions, response);
+    PaginationUtils.fillPaginationFields(positions, response);
 
     return ResponseEntity.ok(response);
   }

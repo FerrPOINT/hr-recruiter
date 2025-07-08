@@ -53,6 +53,66 @@ public class ElevenLabsProperties {
   /** TTL кэша в секундах */
   private Duration cacheTtl = Duration.ofHours(24);
 
+  // Конфигурация для ElevenLabs Conversational AI
+  /** ID агента по умолчанию */
+  private String defaultAgentId;
+
+  /** ID голоса по умолчанию */
+  private String defaultVoiceId = "21m00Tcm4TlvDq8ikWAM"; // Rachel - профессиональный голос
+
+  /** Язык по умолчанию */
+  private String defaultLanguage = "ru";
+
+  /** Промпт агента по умолчанию */
+  private String defaultAgentPrompt =
+      """
+      Ты профессиональный HR-специалист, проводящий собеседование.
+      Твоя задача - задавать вопросы кандидату и вести естественную беседу.
+
+      Правила:
+      1. Задавай только те вопросы, которые получаешь от системы
+      2. Не придумывай свои вопросы
+      3. Будь дружелюбным и профессиональным
+      4. Если кандидат не отвечает, вежливо попроси повторить
+      5. После каждого ответа переходи к следующему вопросу
+      6. В конце поблагодари за участие
+
+      Стиль общения: профессиональный, но дружелюбный
+      """;
+
+  /** Максимальная длительность сессии в минутах */
+  private int maxSessionDurationMinutes = 60;
+
+  /** Таймаут ожидания ответа в секундах */
+  private int responseTimeoutSeconds = 30;
+
+  /** Включить детекцию эмоций */
+  private boolean enableEmotionDetection = true;
+
+  /** Включить детекцию говорящего */
+  private boolean enableSpeakerDetection = false;
+
+  /** Включить временные метки */
+  private boolean enableTimestamps = true;
+
+  /** Включить анализ качества аудио */
+  private boolean enableAudioQualityAnalysis = true;
+
+  /** Настройки голоса: стабильность (0.0-1.0) */
+  private double stability = 0.5;
+
+  /** Настройки голоса: similarity boost (0.0-1.0) */
+  private double similarityBoost = 0.75;
+
+  /** Настройки голоса: style (0.0-1.0) */
+  private double style = 0.0;
+
+  /** Максимальная длительность ответа кандидата (сек) */
+  private int maxAnswerDurationSeconds = 120;
+
+  /** Минимальный порог confidence для принятия ответа */
+  private double minConfidenceThreshold = 0.7;
+
   /** Проверяет, что конфигурация корректна */
   public boolean isValid() {
     return apiKey != null && !apiKey.trim().isEmpty();

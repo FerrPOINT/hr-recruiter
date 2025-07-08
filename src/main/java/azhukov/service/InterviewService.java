@@ -12,7 +12,6 @@ import azhukov.mapper.InterviewMapper;
 import azhukov.mapper.PositionMapper;
 import azhukov.mapper.QuestionMapper;
 import azhukov.model.GetInterview200Response;
-import azhukov.model.InterviewTranscribeResponse;
 import azhukov.repository.CandidateRepository;
 import azhukov.repository.InterviewAnswerRepository;
 import azhukov.repository.InterviewRepository;
@@ -162,65 +161,46 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     return interviews.map(interviewMapper::toDto);
   }
 
-  /** Транскрибирует ответ на вопрос собеседования */
-  public InterviewTranscribeResponse transcribeInterviewAnswer(
-      Long interviewId, Long questionId, String audioData) {
-    log.info("Transcribing answer for interview: {} question: {}", interviewId, questionId);
+  /** Завершает собеседование */
+  /** Начинает собеседование */
+  public Interview startInterview(Long interviewId) {
+    log.info("Starting interview: {}", interviewId);
+    Interview interview = findByIdOrThrow(interviewId);
 
-    try {
-      // Получаем интервью
-      Interview interview = findByIdOrThrow(interviewId);
-
-      // Проверяем, это первый вопрос?
-      List<InterviewAnswer> existingAnswers =
-          interviewAnswerRepository.findByInterviewId(interviewId);
-      boolean isFirstQuestion = existingAnswers.isEmpty();
-
-      if (isFirstQuestion) {
-        // Это первый вопрос - начинаем интервью
-        log.info("First question for interview: {}, starting interview", interviewId);
-        interview.setStatus(Interview.Status.IN_PROGRESS);
-
-        // Время начала = текущее время - время, выделенное на вопрос
-        Position position = interview.getPosition();
-        int answerTimeSeconds =
-            position.getAnswerTime() != null
-                ? position.getAnswerTime()
-                : 150; // по умолчанию 2.5 минуты
-        LocalDateTime startTime = LocalDateTime.now().minusSeconds(answerTimeSeconds);
-        interview.setStartedAt(startTime);
-
-        repository.save(interview);
-        log.info("Interview {} started at: {}", interviewId, startTime);
-      }
-
-      // Пока используем заглушку для транскрибации
-      String transcript = "Transcribed audio content for question " + questionId;
-
-      // Сохраняем ответ в базу используя существующий метод
-      interview =
-          submitInterviewAnswer(
-              interviewId,
-              questionId,
-              null, // answerText
-              null, // audioUrl - сохраняем только транскрипт
-              transcript);
-
-      return new InterviewTranscribeResponse().questionId(questionId).transcript(transcript);
-
-    } catch (Exception e) {
-      log.error("Error transcribing answer for interview: {}", interviewId, e);
-      throw new RuntimeException("Error transcribing audio", e);
+    if (interview.getStatus() != Interview.Status.NOT_STARTED) {
+      throw new ValidationException("Собеседование уже начато или завершено");
     }
+
+    // Устанавливаем статус в процессе
+    interview.setStatus(Interview.Status.IN_PROGRESS);
+    interview.setStartedAt(LocalDateTime.now());
+
+    Interview savedInterview = repository.save(interview);
+    log.info("Interview {} started", interviewId);
+    return savedInterview;
   }
 
-  /** Завершает собеседование */
+  /** Завершает собеседование вручную */
   public Interview finishInterview(Long interviewId) {
     log.info("Finishing interview: {}", interviewId);
     Interview interview = findByIdOrThrow(interviewId);
     if (interview.getStatus() != Interview.Status.IN_PROGRESS) {
       throw new ValidationException("Собеседование не может быть завершено в текущем статусе");
     }
+
+    // Проверяем, есть ли ответы для оценки
+    List<InterviewAnswer> answers = interviewAnswerRepository.findByInterviewId(interviewId);
+    if (answers.isEmpty()) {
+      log.warn("Interview {} has no answers to evaluate, setting result to ERROR", interviewId);
+      interview.setStatus(Interview.Status.FINISHED);
+      interview.setResult(Interview.Result.ERROR);
+      interview.setFinishedAt(LocalDateTime.now());
+      Interview savedInterview = repository.save(interview);
+      log.info("Interview finished with ERROR result: {}", interviewId);
+      return savedInterview;
+    }
+
+    // Определяем результат на основе оценок (если они есть)
     Interview.Result result = determineInterviewResult(interview);
     interview.finish(result);
     updateCandidateStatus(interview.getCandidate(), result);
@@ -249,9 +229,9 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     if (!question.getPosition().getId().equals(interview.getPosition().getId())) {
       throw new ValidationException("Вопрос не принадлежит вакансии собеседования");
     }
+    // Проверяем, не отвечен ли уже этот вопрос
     boolean alreadyAnswered =
-        interview.getAnswers().stream()
-            .anyMatch(answer -> answer.getQuestion().getId().equals(questionId));
+        interviewAnswerRepository.existsByInterviewIdAndQuestionId(interviewId, questionId);
     if (alreadyAnswered) {
       throw new ValidationException("На этот вопрос уже дан ответ");
     }
@@ -271,12 +251,6 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     Position position = interview.getPosition();
     int totalQuestions = position.getQuestionsCount();
     int answeredQuestions = interview.getAnswers().size();
-
-    if (answeredQuestions >= totalQuestions) {
-      // Это последний ответ - завершаем собеседование
-      log.info("Last answer submitted for interview: {}, finishing interview", interviewId);
-      finishInterview(interviewId);
-    }
 
     Interview savedInterview = repository.save(interview);
     log.info(
@@ -347,15 +321,16 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
   public InterviewStats getInterviewStats() {
     log.info("Getting interview statistics");
 
-    List<Interview> allInterviews = repository.findAll();
-    int total = allInterviews.size();
-    int successful = (int) allInterviews.stream().filter(Interview::isSuccessful).count();
-    int unsuccessful = total - successful;
+    // Используем оптимизированные запросы вместо загрузки всех данных
+    long total = repository.count();
+    long successful = repository.countByResult(Interview.Result.SUCCESSFUL);
+    long unsuccessful = repository.countByResult(Interview.Result.UNSUCCESSFUL);
+    long error = repository.countByResult(Interview.Result.ERROR);
 
     return InterviewStats.builder()
-        .total(total)
-        .successful(successful)
-        .unsuccessful(unsuccessful)
+        .total((int) total)
+        .successful((int) successful)
+        .unsuccessful((int) (unsuccessful + error)) // Включаем ошибки в неуспешные
         .build();
   }
 
@@ -368,11 +343,29 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
 
   /** Определяет результат собеседования на основе оценок */
   private Interview.Result determineInterviewResult(Interview interview) {
-    Double averageScore = interview.getAverageAnswerScore();
+    // Получаем ответы напрямую из репозитория для точного подсчета
+    List<InterviewAnswer> answers = interviewAnswerRepository.findByInterviewId(interview.getId());
 
-    if (averageScore == null) {
-      return Interview.Result.UNSUCCESSFUL;
+    if (answers.isEmpty()) {
+      log.warn("Interview {} has no answers, setting result to ERROR", interview.getId());
+      return Interview.Result.ERROR;
     }
+
+    // Проверяем, есть ли оценки
+    List<InterviewAnswer> scoredAnswers =
+        answers.stream().filter(answer -> answer.getScore() != null).toList();
+
+    if (scoredAnswers.isEmpty()) {
+      log.warn(
+          "Interview {} has answers but no scores, setting result to ERROR", interview.getId());
+      return Interview.Result.ERROR;
+    }
+
+    // Вычисляем среднюю оценку
+    double averageScore =
+        scoredAnswers.stream().mapToDouble(answer -> answer.getScore()).average().orElse(0.0);
+
+    log.info("Interview {} average score: {}", interview.getId(), averageScore);
 
     // Если средняя оценка выше 70, считаем собеседование успешным
     return averageScore >= 70.0 ? Interview.Result.SUCCESSFUL : Interview.Result.UNSUCCESSFUL;
@@ -395,6 +388,11 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     return interviewAnswerRepository
         .findById(answerId)
         .orElseThrow(() -> new ResourceNotFoundException("Ответ не найден: " + answerId));
+  }
+
+  /** Получает маппер для преобразования в DTO */
+  public InterviewMapper getInterviewMapper() {
+    return interviewMapper;
   }
 
   /** Статистика по собеседованиям */

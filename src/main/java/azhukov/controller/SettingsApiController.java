@@ -1,7 +1,9 @@
 package azhukov.controller;
 
 import azhukov.api.SettingsApi;
+import azhukov.mapper.TariffMapper;
 import azhukov.model.GetTariffInfo200Response;
+import azhukov.model.TariffUpdateRequest;
 import azhukov.service.BrandingService;
 import azhukov.service.TariffService;
 import java.util.List;
@@ -9,8 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -20,10 +21,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class SettingsApiController implements SettingsApi {
+@PreAuthorize("hasRole('ADMIN')")
+public class SettingsApiController extends BaseController implements SettingsApi {
 
   private final BrandingService brandingService;
   private final TariffService tariffService;
+  private final TariffMapper tariffMapper;
 
   // ---- Branding ----
   @Override
@@ -67,7 +70,8 @@ public class SettingsApiController implements SettingsApi {
   @Override
   public ResponseEntity<azhukov.model.Tariff> updateTariff(Long id, azhukov.model.Tariff tariff) {
     log.debug("PUT /tariffs/{} - обновление тарифа", id);
-    azhukov.model.TariffUpdateRequest updateRequest = new azhukov.model.TariffUpdateRequest();
+    // TODO: Создать маппер для этого преобразования
+    TariffUpdateRequest updateRequest = new TariffUpdateRequest();
     updateRequest.setName(tariff.getName());
     updateRequest.setPrice(tariff.getPrice());
     updateRequest.setFeatures(tariff.getFeatures());
@@ -86,8 +90,7 @@ public class SettingsApiController implements SettingsApi {
   @Override
   public ResponseEntity<GetTariffInfo200Response> getTariffInfo() {
     log.debug("GET /tariff/info - получение информации о тарифе пользователя");
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String userEmail = authentication.getName();
+    String userEmail = getCurrentUserEmail();
     GetTariffInfo200Response info = tariffService.getUserTariffInfo(userEmail);
     return ResponseEntity.ok(info);
   }

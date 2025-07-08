@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -21,36 +22,29 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-public class InterviewsApiController implements InterviewsApi {
+public class InterviewsApiController extends BaseController implements InterviewsApi {
 
   private final InterviewService interviewService;
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<azhukov.model.Interview> createInterviewFromCandidate(Long candidateId) {
     log.info("Creating interview for candidate: {}", candidateId);
-    try {
-      azhukov.model.Interview interviewDto =
-          interviewService.createInterviewFromCandidate(candidateId);
-      return ResponseEntity.status(HttpStatus.CREATED).body(interviewDto);
-    } catch (Exception e) {
-      log.error("Error creating interview for candidate: {}", candidateId, e);
-      throw e;
-    }
+    azhukov.model.Interview interviewDto =
+        interviewService.createInterviewFromCandidate(candidateId);
+    return ResponseEntity.status(HttpStatus.CREATED).body(interviewDto);
   }
 
   @Override
+  @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
   public ResponseEntity<GetInterview200Response> getInterview(Long id) {
     log.info("Getting interview information: {}", id);
-    try {
-      GetInterview200Response response = interviewService.getInterviewDetails(id);
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("Error getting interview information: {}", id, e);
-      throw e;
-    }
+    GetInterview200Response response = interviewService.getInterviewDetails(id);
+    return ResponseEntity.ok(response);
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<PaginatedResponse> listInterviews(
       Optional<Long> positionId,
       Optional<Long> candidateId,
@@ -65,35 +59,34 @@ public class InterviewsApiController implements InterviewsApi {
         size.orElse(20L),
         sort.orElse("createdAt"));
 
-    try {
-      Long pageNum = page.orElse(0L);
-      Long pageSize = size.orElse(20L);
-      Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
+    Pageable pageable = PaginationUtils.createPageableFromOptional(page, size);
 
-      Page<azhukov.model.Interview> interviews =
-          interviewService.getInterviewsPage(
-              positionId.orElse(null), candidateId.orElse(null), pageable);
+    Page<azhukov.model.Interview> interviews =
+        interviewService.getInterviewsPage(
+            positionId.orElse(null), candidateId.orElse(null), pageable);
 
-      PaginatedResponse response = new PaginatedResponse();
-      PaginationUtils.fillPaginationFields(interviews, response);
+    PaginatedResponse response = new PaginatedResponse();
+    PaginationUtils.fillPaginationFields(interviews, response);
 
-      return ResponseEntity.ok(response);
-    } catch (Exception e) {
-      log.error("Error listing interviews", e);
-      throw e;
-    }
+    return ResponseEntity.ok(response);
   }
 
   @Override
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<List<azhukov.model.Interview>> listPositionInterviews(Long positionId) {
     log.info("Listing interviews for position: {}", positionId);
-    try {
-      List<azhukov.model.Interview> interviewDtos =
-          interviewService.getInterviewsByPosition(positionId);
-      return ResponseEntity.ok(interviewDtos);
-    } catch (Exception e) {
-      log.error("Error listing interviews for position: {}", positionId, e);
-      throw e;
-    }
+    List<azhukov.model.Interview> interviewDtos =
+        interviewService.getInterviewsByPosition(positionId);
+    return ResponseEntity.ok(interviewDtos);
+  }
+
+  @Override
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<azhukov.model.Interview> finishInterview(Long id) {
+    log.info("Manually finishing interview: {}", id);
+    azhukov.entity.Interview finishedInterview = interviewService.finishInterview(id);
+    azhukov.model.Interview interviewDto =
+        interviewService.getInterviewMapper().toDto(finishedInterview);
+    return ResponseEntity.ok(interviewDto);
   }
 }

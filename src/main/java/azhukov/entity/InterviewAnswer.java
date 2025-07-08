@@ -72,6 +72,28 @@ public class InterviewAnswer {
   @Column(name = "is_correct")
   private Boolean isCorrect; // Для вопросов типа CHOICE
 
+  // Новые поля для голосовых ответов
+  @Column(name = "voice_session_id")
+  private String voiceSessionId; // ID голосовой сессии для этого ответа
+
+  @Column(name = "voice_confidence")
+  private Double voiceConfidence; // Уверенность в распознавании речи (0.0-1.0)
+
+  @Column(name = "voice_emotion")
+  private String voiceEmotion; // Определенная эмоция в голосе
+
+  @Column(name = "voice_speaker_id")
+  private String voiceSpeakerId; // ID говорящего (если несколько)
+
+  @Column(name = "voice_audio_url")
+  private String voiceAudioUrl; // URL аудио файла ответа
+
+  @Column(name = "voice_processing_time")
+  private Long voiceProcessingTime; // Время обработки в миллисекундах
+
+  @Column(name = "voice_quality_score")
+  private Double voiceQualityScore; // Оценка качества аудио (0.0-1.0)
+
   @CreationTimestamp
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;

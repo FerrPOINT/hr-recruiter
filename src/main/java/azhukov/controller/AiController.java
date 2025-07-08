@@ -1,25 +1,21 @@
 package azhukov.controller;
 
 import azhukov.api.AiApi;
-import azhukov.model.GenerateQuestionsRequest;
 import azhukov.model.PositionAiGenerationRequest;
 import azhukov.model.PositionAiGenerationResponse;
 import azhukov.model.PositionDataGenerationRequest;
 import azhukov.model.PositionDataGenerationResponse;
-import azhukov.model.Question;
 import azhukov.model.TranscribeAnswerWithAI200Response;
 import azhukov.model.TranscribeAudio200Response;
 import azhukov.service.PositionDataGenerationService;
 import azhukov.service.TranscriptionService;
 import azhukov.service.ai.AIService;
 import azhukov.service.ai.openrouter.OpenRouterService;
-import azhukov.util.EnumUtils;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,37 +23,13 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-public class AiController implements AiApi {
+@PreAuthorize("hasRole('ADMIN')")
+public class AiController extends BaseController implements AiApi {
 
   private final AIService aiService;
   private final TranscriptionService transcriptionService;
   private final PositionDataGenerationService positionDataGenerationService;
   private final OpenRouterService openRouterService;
-
-  @Override
-  public ResponseEntity<List<Question>> generateQuestions(GenerateQuestionsRequest request) {
-    // В контроллере не должно быть бизнес-логики — только делегирование сервису и маппинг моделей.
-    // Вся логика генерации и проверки доступности AI — только в сервисе.
-    try {
-      // Генерируем вопросы через сервис (бизнес-логика и проверки внутри сервиса)
-      List<String> questions = aiService.generateQuestions(request.getPositionDescription(), 10);
-      // Маппим строки в openapi-модель Question (минимальный набор полей)
-      List<Question> questionModels = new java.util.ArrayList<>();
-      long order = 1;
-      for (String q : questions) {
-        Question question = new Question();
-        question.setText(q.trim());
-        question.setType(azhukov.model.QuestionTypeEnum.TEXT);
-        question.setOrder(order++);
-        question.setIsRequired(true);
-        questionModels.add(question);
-      }
-      return ResponseEntity.ok(questionModels);
-    } catch (Exception e) {
-      // Ошибки AI/доступности — сервис сам выбрасывает исключения
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-    }
-  }
 
   @Override
   public ResponseEntity<PositionDataGenerationResponse> generatePositionData(
@@ -95,27 +67,27 @@ public class AiController implements AiApi {
           openRouterService.generatePositionWithAI(
               description, questionsCount.intValue(), questionType);
 
-      // Маппим в OpenAPI модель
+      // TODO: Создать маппер для этого преобразования
       azhukov.model.PositionAiGenerationResponse response =
           new azhukov.model.PositionAiGenerationResponse();
       response.setTitle(aiResponse.getTitle());
       response.setDescription(aiResponse.getDescription());
       response.setTopics(aiResponse.getTopics());
       response.setLevel(
-          EnumUtils.safeValueOf(
+          azhukov.util.EnumUtils.safeValueOf(
               aiResponse.getLevel(),
               azhukov.model.PositionAiGenerationResponse.LevelEnum.class,
               azhukov.model.PositionAiGenerationResponse.LevelEnum.MIDDLE));
 
       // Маппим вопросы
-      List<azhukov.model.PositionAiQuestion> questions = new ArrayList<>();
+      java.util.List<azhukov.model.PositionAiQuestion> questions = new java.util.ArrayList<>();
       if (aiResponse.getQuestions() != null) {
         for (azhukov.service.ai.openrouter.dto.PositionGenerationResponse.Question aiQuestion :
             aiResponse.getQuestions()) {
           azhukov.model.PositionAiQuestion question = new azhukov.model.PositionAiQuestion();
           question.setText(aiQuestion.getText());
           question.setType(
-              EnumUtils.safeValueOf(
+              azhukov.util.EnumUtils.safeValueOf(
                   aiQuestion.getType(),
                   azhukov.model.PositionAiQuestion.TypeEnum.class,
                   azhukov.model.PositionAiQuestion.TypeEnum.TEXT));

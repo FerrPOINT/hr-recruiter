@@ -106,4 +106,10 @@ public interface CandidateRepository extends BaseRepository<Candidate, Long> {
   /** Восстановление кандидата (устанавливает статус NEW) */
   @Query("UPDATE Candidate c SET c.status = 'NEW' WHERE c.id = :id")
   void restore(@Param("id") Long id);
+
+  /** Находит кандидата по телефону */
+  Candidate findByPhone(String phone);
+
+  /** Проверяет существование кандидата по телефону */
+  boolean existsByPhone(String phone);
 }

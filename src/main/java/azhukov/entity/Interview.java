@@ -64,6 +64,32 @@ public class Interview {
   @Column(name = "notes", columnDefinition = "TEXT")
   private String notes;
 
+  // Новые поля для голосового интервью
+  @Column(name = "voice_session_id")
+  private String voiceSessionId; // ID сессии в ElevenLabs
+
+  @Column(name = "voice_agent_id")
+  private String voiceAgentId; // ID агента в ElevenLabs
+
+  @Column(name = "voice_enabled")
+  @Builder.Default
+  private Boolean voiceEnabled = false; // Включено ли голосовое интервью
+
+  @Column(name = "voice_language")
+  private String voiceLanguage; // Язык голосового интервью
+
+  @Column(name = "voice_voice_id")
+  private String voiceVoiceId; // ID голоса в ElevenLabs
+
+  @Column(name = "voice_started_at")
+  private LocalDateTime voiceStartedAt; // Время начала голосовой сессии
+
+  @Column(name = "voice_finished_at")
+  private LocalDateTime voiceFinishedAt; // Время завершения голосовой сессии
+
+  @Column(name = "voice_total_duration")
+  private Long voiceTotalDuration; // Общая длительность голосового интервью в секундах
+
   @OneToMany(mappedBy = "interview", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
   private List<InterviewAnswer> answers = new ArrayList<>();
@@ -86,7 +112,8 @@ public class Interview {
   /** Результаты собеседования */
   public enum Result {
     SUCCESSFUL, // Успешно
-    UNSUCCESSFUL // Неуспешно
+    UNSUCCESSFUL, // Неуспешно
+    ERROR // Ошибка при оценке
   }
 
   /** Начинает собеседование */
