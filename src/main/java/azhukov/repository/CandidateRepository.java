@@ -31,6 +31,9 @@ public interface CandidateRepository extends BaseRepository<Candidate, Long> {
   /** Находит кандидатов по email */
   Candidate findByEmail(String email);
 
+  /** Находит всех кандидатов по email (для обработки дубликатов) */
+  List<Candidate> findAllByEmail(String email);
+
   /** Проверяет существование кандидата по email */
   boolean existsByEmail(String email);
 
@@ -109,6 +112,9 @@ public interface CandidateRepository extends BaseRepository<Candidate, Long> {
 
   /** Находит кандидата по телефону */
   Candidate findByPhone(String phone);
+
+  /** Находит всех кандидатов по телефону (для обработки дубликатов) */
+  List<Candidate> findAllByPhone(String phone);
 
   /** Проверяет существование кандидата по телефону */
   boolean existsByPhone(String phone);

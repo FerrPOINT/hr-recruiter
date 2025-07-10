@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 /** Контроллер для управления голосовыми интервью с ElevenLabs Conversational AI */
 @RestController
-@RequestMapping("/api/interviews")
 @RequiredArgsConstructor
 @Slf4j
 public class VoiceInterviewController extends BaseController implements VoiceInterviewsApi {
@@ -28,7 +27,9 @@ public class VoiceInterviewController extends BaseController implements VoiceInt
 
   @Override
   @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
-  public ResponseEntity<VoiceSessionResponse> createVoiceSession(Long interviewId) {
+  public ResponseEntity<VoiceSessionResponse> createVoiceSession(
+      Long interviewId,
+      java.util.Optional<azhukov.model.VoiceSessionCreateRequest> voiceSessionCreateRequest) {
     log.info("Creating voice session for interview: {}", interviewId);
 
     if (interviewId == null || interviewId <= 0) {
@@ -36,7 +37,9 @@ public class VoiceInterviewController extends BaseController implements VoiceInt
     }
 
     try {
-      VoiceSessionResponse response = voiceInterviewService.createVoiceSession(interviewId);
+      VoiceSessionResponse response =
+          voiceInterviewService.createVoiceSession(
+              interviewId, voiceSessionCreateRequest.orElse(null));
       return ResponseEntity.status(HttpStatus.CREATED).body(response);
     } catch (ResourceNotFoundException e) {
       log.warn("Interview not found: {}", interviewId);

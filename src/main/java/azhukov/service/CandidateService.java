@@ -140,15 +140,39 @@ public class CandidateService {
   public Candidate findOrCreateCandidate(
       String firstName, String lastName, String email, String phone, Long positionId) {
     Candidate candidate = null;
+
+    // Сначала ищем по email
     if (email != null && !email.isBlank()) {
-      candidate = candidateRepository.findByEmail(email);
+      try {
+        candidate = candidateRepository.findByEmail(email);
+      } catch (Exception e) {
+        log.warn("Multiple candidates found with email: {}. Taking the first one.", email);
+        // Если найдено несколько кандидатов с одинаковым email, берем первого
+        List<Candidate> candidates = candidateRepository.findAllByEmail(email);
+        if (!candidates.isEmpty()) {
+          candidate = candidates.get(0);
+        }
+      }
     }
+
+    // Если не нашли по email, ищем по телефону
     if (candidate == null && phone != null && !phone.isBlank()) {
-      candidate = candidateRepository.findByPhone(phone);
+      try {
+        candidate = candidateRepository.findByPhone(phone);
+      } catch (Exception e) {
+        log.warn("Multiple candidates found with phone: {}. Taking the first one.", phone);
+        // Если найдено несколько кандидатов с одинаковым телефоном, берем первого
+        List<Candidate> candidates = candidateRepository.findAllByPhone(phone);
+        if (!candidates.isEmpty()) {
+          candidate = candidates.get(0);
+        }
+      }
     }
+
     if (candidate != null) {
       return candidate;
     }
+
     // Создать нового кандидата
     Position position =
         positionRepository

@@ -132,4 +132,14 @@ public class ElevenLabsProperties {
     API_KEY,
     NONE
   }
+
+  /** Получает язык для транскрибации */
+  public ElevenLabsLanguage getLanguage() {
+    return language;
+  }
+
+  /** Получает модель для STT */
+  public ElevenLabsModel getModelId() {
+    return modelId;
+  }
 }

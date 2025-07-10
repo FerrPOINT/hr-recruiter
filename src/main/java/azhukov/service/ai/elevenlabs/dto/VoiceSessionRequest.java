@@ -41,15 +41,19 @@ public class VoiceSessionRequest {
   @Builder
   public static class VoiceSettings {
     @JsonProperty("stability")
+    @Builder.Default
     private Double stability = 0.5;
 
     @JsonProperty("similarity_boost")
+    @Builder.Default
     private Double similarityBoost = 0.75;
 
     @JsonProperty("style")
+    @Builder.Default
     private Double style = 0.0;
 
     @JsonProperty("use_speaker_boost")
+    @Builder.Default
     private Boolean useSpeakerBoost = true;
   }
 
@@ -57,21 +61,27 @@ public class VoiceSessionRequest {
   @Builder
   public static class SessionSettings {
     @JsonProperty("max_duration_minutes")
+    @Builder.Default
     private Integer maxDurationMinutes = 60;
 
     @JsonProperty("response_timeout_seconds")
+    @Builder.Default
     private Integer responseTimeoutSeconds = 30;
 
     @JsonProperty("enable_emotion_detection")
+    @Builder.Default
     private Boolean enableEmotionDetection = true;
 
     @JsonProperty("enable_speaker_detection")
+    @Builder.Default
     private Boolean enableSpeakerDetection = false;
 
     @JsonProperty("enable_timestamps")
+    @Builder.Default
     private Boolean enableTimestamps = true;
 
     @JsonProperty("enable_audio_quality_analysis")
+    @Builder.Default
     private Boolean enableAudioQualityAnalysis = true;
   }
 

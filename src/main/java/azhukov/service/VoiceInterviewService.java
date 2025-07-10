@@ -8,6 +8,7 @@ import azhukov.exception.ResourceNotFoundException;
 import azhukov.exception.ValidationException;
 import azhukov.model.VoiceMessage;
 import azhukov.model.VoiceSessionResponse;
+import azhukov.model.VoiceSessionStatusEnum;
 import azhukov.repository.InterviewAnswerRepository;
 import azhukov.repository.InterviewRepository;
 import azhukov.repository.QuestionRepository;
@@ -44,7 +45,8 @@ public class VoiceInterviewService {
   private final ObjectMapper objectMapper;
 
   /** Создает голосовую сессию для интервью */
-  public VoiceSessionResponse createVoiceSession(Long interviewId) {
+  public VoiceSessionResponse createVoiceSession(
+      Long interviewId, azhukov.model.VoiceSessionCreateRequest voiceSessionCreateRequest) {
     log.info("Creating voice session for interview: {}", interviewId);
 
     // Проверяем конфигурацию ElevenLabs
@@ -83,7 +85,10 @@ public class VoiceInterviewService {
       // Маппинг ElevenLabs DTO -> openapi-модель
       VoiceSessionResponse apiResponse = new VoiceSessionResponse();
       apiResponse.setSessionId(response.getSessionId());
-      apiResponse.setStatus(response.getStatus());
+      apiResponse.setStatus(VoiceSessionStatusEnum.fromValue(response.getStatus()));
+      apiResponse.setAgentId(response.getAgentId());
+      apiResponse.setWebhookUrl("/api/v1/webhooks/elevenlabs/events");
+      apiResponse.setCreatedAt(java.time.OffsetDateTime.now());
 
       // Обновляем интервью
       interview.setVoiceEnabled(true);
@@ -262,15 +267,15 @@ public class VoiceInterviewService {
     azhukov.model.VoiceSessionStatus status = new azhukov.model.VoiceSessionStatus();
 
     if (!interview.getVoiceEnabled()) {
-      status.setStatus("disabled");
+      status.setStatus(VoiceSessionStatusEnum.ERROR);
     } else if (interview.getStatus() == Interview.Status.NOT_STARTED) {
-      status.setStatus("not_started");
+      status.setStatus(VoiceSessionStatusEnum.CREATED);
     } else if (interview.getStatus() == Interview.Status.IN_PROGRESS) {
-      status.setStatus("active");
+      status.setStatus(VoiceSessionStatusEnum.ACTIVE);
     } else if (interview.getStatus() == Interview.Status.FINISHED) {
-      status.setStatus("finished");
+      status.setStatus(VoiceSessionStatusEnum.ENDED);
     } else {
-      status.setStatus("unknown");
+      status.setStatus(VoiceSessionStatusEnum.ERROR);
     }
 
     return status;
@@ -352,7 +357,7 @@ public class VoiceInterviewService {
   private azhukov.service.ai.elevenlabs.dto.VoiceSessionResponse createElevenLabsSession(
       VoiceSessionRequest request) {
     // Правильный URL для ElevenLabs Conversational AI
-    String url = properties.getApiUrl() + "/v1/agents/" + request.getAgentId() + "/sessions";
+    String url = properties.getApiUrl() + "/v1/convai/agents/" + request.getAgentId() + "/sessions";
 
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(MediaType.APPLICATION_JSON);

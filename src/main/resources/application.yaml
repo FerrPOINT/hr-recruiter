@@ -50,6 +50,7 @@ spring:
     redis:
       time-to-live: 3600000 # 1 hour
       cache-null-values: false
+    # Удалены параметры cache-names и widget-ttl
   
   # Redis Configuration
   data:
@@ -197,6 +198,42 @@ app:
         language: RUSSIAN
         temperature: 0.0
         stability: 0.5
+
+# ElevenLabs Configuration
+elevenlabs:
+  api:
+    key: ${ELEVEN_LABS_API_KEY:}
+    url: https://api.elevenlabs.io
+    timeout: 30000
+    max-retries: 3
+  webhook:
+    secret: ${ELEVENLABS_WEBHOOK_SECRET:}
+    enable-signature-validation: true
+  default:
+    agent-id: ${ELEVENLABS_DEFAULT_AGENT_ID:}
+    voice-id: ${ELEVENLABS_DEFAULT_VOICE_ID:21m00Tcm4TlvDq8ikWAM}
+    language: ru
+    agent-prompt: |
+      Ты проводишь профессиональное собеседование. Твоя задача - задавать вопросы кандидату и внимательно слушать ответы.
+      
+      Инструкции:
+      1. Используй инструмент getNextQuestion для получения вопросов
+      2. Озвучивай вопросы четко и профессионально
+      3. Дождись полного ответа кандидата
+      4. Используй saveAnswer для сохранения ответа
+      5. Заверши интервью после последнего вопроса
+      
+      Будь вежливым, профессиональным и внимательным интервьюером.
+    stability: 0.75
+    similarity-boost: 0.85
+    style: 0.5
+    max-session-duration-minutes: 30
+    response-timeout-seconds: 30
+    enable-emotion-detection: true
+    enable-speaker-detection: true
+    enable-timestamps: true
+    enable-audio-quality-analysis: true
+    min-confidence-threshold: 0.7
         similarity-boost: 0.75
         style: 0.0
         max-answer-duration-seconds: 120

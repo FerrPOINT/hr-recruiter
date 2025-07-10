@@ -37,4 +37,12 @@
         <sqlFile path="db/changelog/changes/008-voice-interview-support.sql"/>
     </changeSet>
 
+    <changeSet id="009-add-unique-indexes-candidates" author="ai">
+        <sqlFile path="db/changelog/changes/009-add-unique-indexes-candidates.sql"/>
+    </changeSet>
+
+    <changeSet id="010-agents-table" author="ai">
+        <sqlFile path="db/changelog/changes/010-agents-table.sql"/>
+    </changeSet>
+
 </databaseChangeLog> 

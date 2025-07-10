@@ -395,6 +395,57 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
     return interviewMapper;
   }
 
+  /** Получает чек-лист для интервью */
+  public List<azhukov.model.GetChecklist200ResponseInner> getInterviewChecklist() {
+    log.info("Getting interview checklist");
+
+    List<azhukov.model.GetChecklist200ResponseInner> checklist =
+        List.of(
+            new azhukov.model.GetChecklist200ResponseInner()
+                .text("Проверить техническое оборудование"),
+            new azhukov.model.GetChecklist200ResponseInner().text("Подготовить вопросы"),
+            new azhukov.model.GetChecklist200ResponseInner().text("Проверить связь"),
+            new azhukov.model.GetChecklist200ResponseInner()
+                .text("Подготовить документы кандидата"),
+            new azhukov.model.GetChecklist200ResponseInner().text("Настроить запись"));
+
+    return checklist;
+  }
+
+  /** Получает информацию для приглашения */
+  public azhukov.model.GetInviteInfo200Response getInviteInfo() {
+    log.info("Getting invite information");
+
+    // Получаем общую статистику по вопросам и языкам
+    long totalQuestions = questionRepository.count();
+    String defaultLanguage = "Русский"; // Можно сделать настраиваемым
+
+    return new azhukov.model.GetInviteInfo200Response()
+        .questionsCount(totalQuestions)
+        .language(defaultLanguage);
+  }
+
+  /** Отправляет ответ на вопрос интервью */
+  public Interview submitInterviewAnswer(
+      Long interviewId, azhukov.model.InterviewAnswerCreateRequest request) {
+    log.info("Submitting interview answer for interview: {}", interviewId);
+
+    Interview interview = findByIdOrThrow(interviewId);
+
+    if (interview.getStatus() != Interview.Status.IN_PROGRESS) {
+      throw new ValidationException("Интервью должно быть в процессе для отправки ответов");
+    }
+
+    // Извлекаем данные из запроса
+    Long questionId = request.getQuestionId();
+    String answerText = request.getAnswerText();
+    String audioUrl = request.getAudioUrl();
+    String transcript = request.getTranscript();
+
+    // Вызываем существующий метод
+    return submitInterviewAnswer(interviewId, questionId, answerText, audioUrl, transcript);
+  }
+
   /** Статистика по собеседованиям */
   @lombok.Data
   @lombok.Builder

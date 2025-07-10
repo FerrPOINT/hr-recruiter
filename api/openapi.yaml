@@ -34,6 +34,12 @@ tags:
     description: Статистика и отчеты
   - name: AI
     description: Взаимодействие с AI-ассистентом
+  - name: Voice Interviews
+    description: Голосовые интервью с ElevenLabs Conversational AI
+  - name: Agents
+    description: Управление AI-агентами для интервью
+  - name: Webhooks
+    description: Webhook обработчики для внешних сервисов
 
 paths:
   /auth/login:
@@ -774,7 +780,8 @@ paths:
       operationId: startInterview
       tags:
         - Interviews
-      summary: Начать интервью
+      summary: Начать интервью (с поддержкой голосового режима)
+      description: Начинает интервью с возможностью автоматического создания голосового агента
       security:
         - AdminAuth: []
       parameters:
@@ -784,9 +791,25 @@ paths:
           schema:
             type: integer
             format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewStartRequest'
       responses:
         '200':
           description: Интервью успешно начато
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InterviewStartResponse'
+        '400':
+          description: Некорректные параметры
+        '404':
+          description: Интервью не найдено
+        '500':
+          description: Ошибка создания агента
 
   /interviews/{id}/finish:
     post:
@@ -1489,6 +1512,8 @@ paths:
         - Voice Interviews
       summary: Создать голосовую сессию для интервью
       description: Создает голосовую сессию в ElevenLabs Conversational AI для проведения голосового интервью
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: interviewId
@@ -1496,6 +1521,12 @@ paths:
           schema:
             type: integer
             format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceSessionCreateRequest'
       responses:
         '201':
           description: Голосовая сессия создана
@@ -1605,6 +1636,8 @@ paths:
         - Voice Interviews
       summary: Получить статус голосовой сессии
       description: Возвращает текущий статус голосовой сессии
+      security:
+        - AdminAuth: []
       parameters:
         - in: path
           name: interviewId
@@ -1623,6 +1656,202 @@ paths:
           description: Интервью не найдено
         '500':
           description: Ошибка сервера
+
+  # Agent Management Endpoints
+  /agents:
+    get:
+      operationId: listAgents
+      tags:
+        - Agents
+      summary: Получить список агентов
+      description: Возвращает список всех AI-агентов в системе
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Размер страницы
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/AgentStatusEnum'
+          description: Фильтр по статусу агента
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentsPaginatedResponse'
+    post:
+      operationId: createAgent
+      tags:
+        - Agents
+      summary: Создать нового агента
+      description: Создает нового AI-агента для проведения интервью
+      security:
+        - AdminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentCreateRequest'
+      responses:
+        '201':
+          description: Агент создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: Некорректные данные
+        '500':
+          description: Ошибка создания агента
+
+  /agents/{id}:
+    get:
+      operationId: getAgent
+      tags:
+        - Agents
+      summary: Получить агента по ID
+      description: Возвращает информацию о конкретном агенте
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Агент не найден
+    put:
+      operationId: updateAgent
+      tags:
+        - Agents
+      summary: Обновить агента
+      description: Обновляет конфигурацию агента
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdateRequest'
+      responses:
+        '200':
+          description: Агент обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Агент не найден
+    delete:
+      operationId: deleteAgent
+      tags:
+        - Agents
+      summary: Удалить агента
+      description: Удаляет агента и освобождает ресурсы в ElevenLabs
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Агент удален
+        '404':
+          description: Агент не найден
+
+  /agents/{id}/test:
+    post:
+      operationId: testAgent
+      tags:
+        - Agents
+      summary: Протестировать агента
+      description: Отправляет тестовое сообщение агенту для проверки его работы
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentTestRequest'
+      responses:
+        '200':
+          description: Тест выполнен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTestResponse'
+        '404':
+          description: Агент не найден
+
+  # Webhook Endpoints
+  /webhooks/elevenlabs/events:
+    post:
+      operationId: handleElevenLabsWebhook
+      tags:
+        - Webhooks
+      summary: Обработчик событий ElevenLabs
+      description: Принимает webhook события от ElevenLabs Conversational AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ElevenLabsWebhookEvent'
+      responses:
+        '200':
+          description: Событие обработано
+        '400':
+          description: Некорректные данные
+        '500':
+          description: Ошибка обработки
+
+
 
   /candidates/auth:
     post:
@@ -2633,35 +2862,7 @@ components:
           items:
             $ref: '#/components/schemas/Question'
 
-    VoiceSessionResponse:
-      type: object
-      properties:
-        sessionId:
-          type: string
-          description: "ID голосовой сессии"
-        status:
-          type: string
-          description: "Статус голосовой сессии"
-          example: "created"
 
-    VoiceMessage:
-      type: object
-      properties:
-        text:
-          type: string
-          description: "Текст сообщения"
-        audio:
-          type: string
-          format: binary
-          description: "Аудио сообщения"
-
-    VoiceSessionStatus:
-      type: object
-      properties:
-        status:
-          type: string
-          description: "Статус голосовой сессии"
-          example: "active"
 
     CandidateAuthRequest:
       type: object
@@ -2701,6 +2902,348 @@ components:
           description: JWT токен для авторизации кандидата
         candidate:
           $ref: '#/components/schemas/Candidate'
+
+    # Voice Interview Schemas
+    VoiceSessionCreateRequest:
+      type: object
+      properties:
+        voiceMode:
+          type: boolean
+          description: Включить голосовой режим
+          default: false
+        agentConfig:
+          $ref: '#/components/schemas/AgentConfig'
+        voiceSettings:
+          $ref: '#/components/schemas/VoiceSettings'
+        autoCreateAgent:
+          type: boolean
+          description: Автоматически создать агента
+          default: true
+
+    VoiceSessionResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          description: "ID голосовой сессии в ElevenLabs"
+        agentId:
+          type: string
+          description: "ID агента в ElevenLabs"
+        status:
+          $ref: '#/components/schemas/VoiceSessionStatusEnum'
+          description: "Статус сессии"
+        webhookUrl:
+          type: string
+          description: "URL для webhook событий"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Время создания сессии"
+
+    VoiceSessionStatus:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          description: "ID голосовой сессии"
+        status:
+          $ref: '#/components/schemas/VoiceSessionStatusEnum'
+          description: "Статус голосовой сессии"
+        currentQuestion:
+          type: integer
+          description: "Номер текущего вопроса"
+        totalQuestions:
+          type: integer
+          description: "Общее количество вопросов"
+        duration:
+          type: integer
+          description: "Длительность сессии в секундах"
+        lastActivity:
+          type: string
+          format: date-time
+          description: "Время последней активности"
+
+    VoiceMessage:
+      type: object
+      properties:
+        text:
+          type: string
+          description: "Текст сообщения"
+        audioUrl:
+          type: string
+          description: "URL аудио файла"
+        durationMs:
+          type: integer
+          description: "Длительность аудио в миллисекундах"
+        confidence:
+          type: number
+          format: float
+          description: "Уверенность транскрибации (0-1)"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Время сообщения"
+        type:
+          $ref: '#/components/schemas/VoiceMessageTypeEnum'
+
+    # Agent Schemas
+    Agent:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: "ID агента в системе"
+        name:
+          type: string
+          description: "Название агента"
+        description:
+          type: string
+          description: "Описание агента"
+        elevenLabsAgentId:
+          type: string
+          description: "ID агента в ElevenLabs"
+        status:
+          $ref: '#/components/schemas/AgentStatusEnum'
+        config:
+          $ref: '#/components/schemas/AgentConfig'
+        interviewId:
+          type: integer
+          format: int64
+          description: "ID интервью, для которого создан агент"
+        positionId:
+          type: integer
+          format: int64
+          description: "ID позиции"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, elevenLabsAgentId, status, createdAt]
+
+    AgentCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Название агента"
+        description:
+          type: string
+          description: "Описание агента"
+        interviewId:
+          type: integer
+          format: int64
+          description: "ID интервью"
+        config:
+          $ref: '#/components/schemas/AgentConfig'
+      required: [name, description, interviewId, config]
+
+    AgentUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Название агента"
+        description:
+          type: string
+          description: "Описание агента"
+        config:
+          $ref: '#/components/schemas/AgentConfig'
+        status:
+          $ref: '#/components/schemas/AgentStatusEnum'
+
+    AgentConfig:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Название агента"
+        description:
+          type: string
+          description: "Описание агента"
+        prompt:
+          type: string
+          description: "Промпт для агента"
+        voiceId:
+          type: string
+          description: "ID голоса в ElevenLabs"
+        voiceSettings:
+          $ref: '#/components/schemas/VoiceSettings'
+        tools:
+          type: array
+          items:
+            type: string
+          description: "Список доступных инструментов"
+        webhookUrl:
+          type: string
+          description: "URL для webhook событий"
+        language:
+          type: string
+          description: "Язык агента"
+          example: "ru"
+        personality:
+          type: string
+          description: "Личность агента"
+          example: "professional"
+      required: [name, description, prompt, voiceId]
+
+    VoiceSettings:
+      type: object
+      properties:
+        stability:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: "Стабильность голоса"
+          example: 0.75
+        similarityBoost:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: "Усиление сходства"
+          example: 0.85
+        style:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: "Стиль голоса"
+          example: 0.5
+        useSpeakerBoost:
+          type: boolean
+          description: "Использовать усиление говорящего"
+          example: true
+
+    AgentTestRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: "Тестовое сообщение"
+        context:
+          type: object
+          description: "Контекст для тестирования"
+      required: [message]
+
+    AgentTestResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: "Успешность теста"
+        response:
+          type: string
+          description: "Ответ агента"
+        duration:
+          type: integer
+          description: "Время ответа в миллисекундах"
+        error:
+          type: string
+          description: "Ошибка, если есть"
+
+    AgentsPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список агентов"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+
+    # Webhook Schemas
+    ElevenLabsWebhookEvent:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/WebhookEventTypeEnum'
+          description: "Тип события"
+        interviewId:
+          type: string
+          description: "ID интервью"
+        sessionId:
+          type: string
+          description: "ID сессии"
+        agentId:
+          type: string
+          description: "ID агента"
+        timestamp:
+          type: string
+          format: date-time
+          description: "Время события"
+        data:
+          type: object
+          description: "Данные события"
+      required: [type, timestamp]
+
+    # Enhanced Interview Schemas
+    InterviewStartRequest:
+      type: object
+      properties:
+        voiceMode:
+          type: boolean
+          description: "Включить голосовой режим"
+          default: false
+        agentConfig:
+          $ref: '#/components/schemas/AgentConfig'
+        voiceSettings:
+          $ref: '#/components/schemas/VoiceSettings'
+        autoCreateAgent:
+          type: boolean
+          description: "Автоматически создать агента"
+          default: true
+
+    InterviewStartResponse:
+      type: object
+      properties:
+        interviewId:
+          type: integer
+          format: int64
+          description: "ID интервью"
+        agentId:
+          type: string
+          description: "ID созданного агента"
+        sessionId:
+          type: string
+          description: "ID голосовой сессии"
+        status:
+          $ref: '#/components/schemas/InterviewStartStatusEnum'
+          description: "Статус запуска"
+        message:
+          type: string
+          description: "Дополнительная информация"
+        webhookUrl:
+          type: string
+          description: "URL для webhook событий"
+
+    # Enums
+    AgentStatusEnum:
+      type: string
+      enum: [ACTIVE, INACTIVE, DELETED, ERROR, CREATING]
+      description: "Статус агента"
+
+    VoiceSessionStatusEnum:
+      type: string
+      enum: [CREATED, ACTIVE, ENDED, ERROR]
+      description: "Статус голосовой сессии"
+
+    InterviewStartStatusEnum:
+      type: string
+      enum: [STARTED, AGENT_CREATED, ERROR]
+      description: "Статус запуска интервью"
+
+    WebhookEventTypeEnum:
+      type: string
+      enum: [AGENT_MESSAGE, AGENT_TOOL_CALL, CONVERSATION_ENDED, CONVERSATION_STARTED, ERROR]
+      description: "Тип webhook события"
+
+    VoiceMessageTypeEnum:
+      type: string
+      enum: [AGENT_QUESTION, USER_ANSWER, AGENT_MESSAGE, SYSTEM_MESSAGE]
+      description: "Тип голосового сообщения"
 
   securitySchemes:
     CandidateAuth:

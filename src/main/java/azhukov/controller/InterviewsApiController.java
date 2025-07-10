@@ -2,7 +2,9 @@ package azhukov.controller;
 
 import azhukov.api.InterviewsApi;
 import azhukov.model.*;
+import azhukov.service.ElevenLabsAgentService;
 import azhukov.service.InterviewService;
+import azhukov.service.VoiceInterviewService;
 import azhukov.util.PaginationUtils;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +27,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class InterviewsApiController extends BaseController implements InterviewsApi {
 
   private final InterviewService interviewService;
+  private final VoiceInterviewService voiceInterviewService;
+  private final ElevenLabsAgentService elevenLabsAgentService;
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
@@ -87,6 +91,93 @@ public class InterviewsApiController extends BaseController implements Interview
     azhukov.entity.Interview finishedInterview = interviewService.finishInterview(id);
     azhukov.model.Interview interviewDto =
         interviewService.getInterviewMapper().toDto(finishedInterview);
+    return ResponseEntity.ok(interviewDto);
+  }
+
+  @Override
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<List<GetChecklist200ResponseInner>> getChecklist() {
+    log.info("Getting interview checklist");
+    List<GetChecklist200ResponseInner> checklist = interviewService.getInterviewChecklist();
+    return ResponseEntity.ok(checklist);
+  }
+
+  @Override
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<GetInviteInfo200Response> getInviteInfo() {
+    log.info("Getting invite information");
+    GetInviteInfo200Response inviteInfo = interviewService.getInviteInfo();
+    return ResponseEntity.ok(inviteInfo);
+  }
+
+  @Override
+  @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
+  public ResponseEntity<InterviewStartResponse> startInterview(
+      Long id, Optional<InterviewStartRequest> interviewStartRequest) {
+    log.info(
+        "Starting interview: {} with voice mode: {}",
+        id,
+        interviewStartRequest.map(req -> req.getVoiceMode()).orElse(false));
+
+    if (interviewStartRequest.isPresent() && interviewStartRequest.get().getVoiceMode()) {
+      // Создаем агента ElevenLabs если нужно
+      String agentId = null;
+      if (interviewStartRequest.get().getAutoCreateAgent() != null
+          && interviewStartRequest.get().getAutoCreateAgent()) {
+        try {
+          var agent = elevenLabsAgentService.createAgentForInterview(id);
+          agentId = agent.getElevenLabsAgentId();
+          log.info("Created ElevenLabs agent: {} for interview: {}", agentId, id);
+        } catch (Exception e) {
+          log.error("Failed to create ElevenLabs agent for interview: {}", id, e);
+          // Продолжаем без агента, используем дефолтный
+        }
+      }
+
+      // Создаем голосовую сессию
+      VoiceSessionCreateRequest voiceRequest = new VoiceSessionCreateRequest();
+      voiceRequest.setVoiceMode(true);
+      voiceRequest.setAgentConfig(interviewStartRequest.get().getAgentConfig());
+      voiceRequest.setVoiceSettings(interviewStartRequest.get().getVoiceSettings());
+      voiceRequest.setAutoCreateAgent(interviewStartRequest.get().getAutoCreateAgent());
+
+      VoiceSessionResponse voiceSession =
+          voiceInterviewService.createVoiceSession(id, voiceRequest);
+
+      InterviewStartResponse response = new InterviewStartResponse();
+      response.setInterviewId(id);
+      response.setAgentId(agentId != null ? agentId : voiceSession.getAgentId());
+      response.setSessionId(voiceSession.getSessionId());
+      response.setStatus(InterviewStartStatusEnum.AGENT_CREATED);
+      response.setMessage("Voice session created successfully");
+      response.setWebhookUrl(
+          voiceSession.getWebhookUrl() != null
+              ? voiceSession.getWebhookUrl()
+              : "/api/v1/webhooks/elevenlabs/events");
+
+      return ResponseEntity.ok(response);
+    } else {
+      // Обычный старт интервью
+      interviewService.startInterview(id);
+
+      InterviewStartResponse response = new InterviewStartResponse();
+      response.setInterviewId(id);
+      response.setStatus(InterviewStartStatusEnum.STARTED);
+      response.setMessage("Interview started successfully");
+
+      return ResponseEntity.ok(response);
+    }
+  }
+
+  @Override
+  @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
+  public ResponseEntity<azhukov.model.Interview> submitInterviewAnswer(
+      Long id, InterviewAnswerCreateRequest interviewAnswerCreateRequest) {
+    log.info("Submitting interview answer for interview: {}", id);
+    azhukov.entity.Interview updatedInterview =
+        interviewService.submitInterviewAnswer(id, interviewAnswerCreateRequest);
+    azhukov.model.Interview interviewDto =
+        interviewService.getInterviewMapper().toDto(updatedInterview);
     return ResponseEntity.ok(interviewDto);
   }
 }
