@@ -118,4 +118,22 @@ public interface CandidateRepository extends BaseRepository<Candidate, Long> {
 
   /** Проверяет существование кандидата по телефону */
   boolean existsByPhone(String phone);
+
+  // === МЕТОДЫ ДЛЯ ВИДЖЕТОВ ===
+
+  /** Подсчитывает количество кандидатов по источнику */
+  long countBySource(String source);
+
+  /** Подсчитывает количество кандидатов по статусу и источнику */
+  long countByStatusAndSource(Candidate.Status status, String source);
+
+  /** Получить группировку кандидатов по источникам */
+  @Query("SELECT c.source, COUNT(c) FROM Candidate c GROUP BY c.source")
+  List<Object[]> countBySourceGrouped();
+
+  /** Находит кандидатов по источнику */
+  List<Candidate> findBySource(String source);
+
+  /** Находит кандидатов по источнику с пагинацией */
+  Page<Candidate> findBySource(String source, Pageable pageable);
 }

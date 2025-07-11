@@ -10,7 +10,7 @@
 
 ### **Что добавляем в бэкенд:**
 1. **Новая таблица:** `activity_log` - для ленты активности
-2. **Новые поля:** `source` в candidates, `level` в positions
+2. **Новые поля:** `source` в candidates, `level` в positions (если нет)
 3. **Новый эндпоинт:** `/activity` - получение активности
 4. **Расширение схем:** добавление группировок и временных данных в существующие статистики
 
@@ -44,12 +44,28 @@
 
 ### 1. **РАСШИРЕНИЕ СУЩЕСТВУЮЩИХ СХЕМ**
 
-#### **1.1 PositionStats - Минимальное расширение**
+#### **1.1 PositionStats - Консервативное расширение**
 ```yaml
 PositionStats:
   type: object
   properties:
-    # БАЗОВЫЕ ДАННЫЕ (из БД)
+    # СУЩЕСТВУЮЩИЕ ПОЛЯ (не изменяем)
+    positionId:
+      type: integer
+    interviewsTotal:
+      type: integer
+      description: "Всего собеседований"
+    interviewsSuccessful:
+      type: integer
+      description: "Успешно завершенные"
+    interviewsInProgress:
+      type: integer
+      description: "В процессе"
+    interviewsUnsuccessful:
+      type: integer
+      description: "Неуспешно завершенные"
+    
+    # НОВЫЕ ПОЛЯ (добавляем)
     total:
       type: integer
       description: "Общее количество вакансий"
@@ -63,7 +79,7 @@ PositionStats:
       type: integer
       description: "Архивные вакансии"
     
-    # ДЕТАЛЬНЫЕ ДАННЫЕ (группировка по уровням)
+    # ГРУППИРОВКА ПО УРОВНЯМ (если есть поле level)
     byLevel:
       type: object
       properties:
@@ -75,26 +91,14 @@ PositionStats:
           type: integer
         lead:
           type: integer
-    
-    # ДАННЫЕ ПО ВРЕМЕНИ (для трендов)
-    createdLast7Days:
-      type: array
-      items:
-        type: integer
-      description: "Количество созданных вакансий за последние 7 дней"
-    createdLast30Days:
-      type: array
-      items:
-        type: integer
-      description: "Количество созданных вакансий за последние 30 дней"
 ```
 
-#### **1.2 CandidateStats - Минимальное расширение**
+#### **1.2 CandidateStats - Консервативное расширение**
 ```yaml
 CandidateStats:
   type: object
   properties:
-    # БАЗОВЫЕ ДАННЫЕ
+    # СУЩЕСТВУЮЩИЕ ПОЛЯ (не изменяем)
     total:
       type: integer
     inProgress:
@@ -103,25 +107,13 @@ CandidateStats:
       type: integer
     hired:
       type: integer
+    
+    # НОВЫЕ ПОЛЯ (добавляем)
     rejected:
       type: integer
+      description: "Отклоненные кандидаты"
     
-    # ГРУППИРОВКА ПО СТАТУСАМ
-    byStatus:
-      type: object
-      properties:
-        applied:
-          type: integer
-        interviewing:
-          type: integer
-        offered:
-          type: integer
-        hired:
-          type: integer
-        rejected:
-          type: integer
-    
-    # ГРУППИРОВКА ПО ИСТОЧНИКАМ
+    # ГРУППИРОВКА ПО ИСТОЧНИКАМ (если есть поле source)
     bySource:
       type: object
       properties:
@@ -133,59 +125,31 @@ CandidateStats:
           type: integer
         social:
           type: integer
-    
-    # ВРЕМЕННЫЕ ДАННЫЕ
-    createdLast7Days:
-      type: array
-      items:
-        type: integer
-    createdLast30Days:
-      type: array
-      items:
-        type: integer
 ```
 
-#### **1.3 InterviewStats - Минимальное расширение**
+#### **1.3 InterviewStats - Консервативное расширение**
 ```yaml
 InterviewStats:
   type: object
   properties:
-    # БАЗОВЫЕ ДАННЫЕ
+    # СУЩЕСТВУЮЩИЕ ПОЛЯ (не изменяем)
     total:
       type: integer
     successful:
       type: integer
     unsuccessful:
       type: integer
+    
+    # НОВЫЕ ПОЛЯ (добавляем)
     inProgress:
       type: integer
+      description: "Интервью в процессе"
     notStarted:
       type: integer
+      description: "Интервью не начатые"
     cancelled:
       type: integer
-    
-    # ГРУППИРОВКА ПО СТАТУСАМ
-    byStatus:
-      type: object
-      properties:
-        not_started:
-          type: integer
-        in_progress:
-          type: integer
-        finished:
-          type: integer
-        cancelled:
-          type: integer
-    
-    # ВРЕМЕННЫЕ ДАННЫЕ
-    scheduledLast7Days:
-      type: array
-      items:
-        type: integer
-    completedLast7Days:
-      type: array
-      items:
-        type: integer
+      description: "Отмененные интервью"
 ```
 
 ### 2. **НОВАЯ СХЕМА: ActivityItem**
@@ -296,7 +260,7 @@ CREATE INDEX idx_activity_log_created_at ON activity_log(created_at);
 CREATE INDEX idx_activity_log_type ON activity_log(activity_type);
 ```
 
-### **2. Добавить поля в существующие таблицы**
+### **2. Добавить поля в существующие таблицы (если нет)**
 ```sql
 -- Добавить source в candidates (для группировки)
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS source VARCHAR(50);
@@ -349,19 +313,22 @@ public class PositionService {
     public PositionStats getEnhancedPositionStats(boolean includeDetails) {
         PositionStats stats = new PositionStats();
         
-        // Базовые данные
+        // Заполняем существующие поля (если есть positionId)
+        // stats.setPositionId(...);
+        // stats.setInterviewsTotal(...);
+        // stats.setInterviewsSuccessful(...);
+        // stats.setInterviewsInProgress(...);
+        // stats.setInterviewsUnsuccessful(...);
+        
+        // Добавляем новые поля
         stats.setTotal(positionRepository.count());
         stats.setActive(positionRepository.countByStatus("active"));
         stats.setPaused(positionRepository.countByStatus("paused"));
         stats.setArchived(positionRepository.countByStatus("archived"));
         
         if (includeDetails) {
-            // Группировка по уровням
+            // Группировка по уровням (если есть поле level)
             stats.setByLevel(positionRepository.countByLevel());
-            
-            // Данные по времени (для трендов)
-            stats.setCreatedLast7Days(positionRepository.countCreatedLast7Days());
-            stats.setCreatedLast30Days(positionRepository.countCreatedLast30Days());
         }
         
         return stats;
@@ -377,20 +344,40 @@ public class CandidateService {
     public CandidateStats getEnhancedCandidateStats() {
         CandidateStats stats = new CandidateStats();
         
-        // Базовые данные
+        // Заполняем существующие поля
         stats.setTotal(candidateRepository.count());
         stats.setInProgress(candidateRepository.countByStatus("in_progress"));
         stats.setFinished(candidateRepository.countByStatus("finished"));
         stats.setHired(candidateRepository.countByStatus("hired"));
+        
+        // Добавляем новые поля
         stats.setRejected(candidateRepository.countByStatus("rejected"));
         
-        // Группировки
-        stats.setByStatus(candidateRepository.countByStatus());
+        // Группировка по источникам (если есть поле source)
         stats.setBySource(candidateRepository.countBySource());
         
-        // Временные данные
-        stats.setCreatedLast7Days(candidateRepository.countCreatedLast7Days());
-        stats.setCreatedLast30Days(candidateRepository.countCreatedLast30Days());
+        return stats;
+    }
+}
+```
+
+### **4. Расширение InterviewService**
+```java
+@Service
+public class InterviewService {
+    
+    public InterviewStats getEnhancedInterviewStats() {
+        InterviewStats stats = new InterviewStats();
+        
+        // Заполняем существующие поля
+        stats.setTotal(interviewRepository.count());
+        stats.setSuccessful(interviewRepository.countByResult("successful"));
+        stats.setUnsuccessful(interviewRepository.countByResult("unsuccessful"));
+        
+        // Добавляем новые поля
+        stats.setInProgress(interviewRepository.countByStatus("in_progress"));
+        stats.setNotStarted(interviewRepository.countByStatus("not_started"));
+        stats.setCancelled(interviewRepository.countByStatus("cancelled"));
         
         return stats;
     }
@@ -459,7 +446,7 @@ public class StatsController {
 const successRate = (successful / total) * 100;
 const conversionRate = (hired / total) * 100;
 
-// Тренды
+// Тренды (если есть временные данные)
 const trend = calculateTrend(last7Days);
 const growth = ((current - previous) / previous) * 100;
 
@@ -469,18 +456,15 @@ const topPositions = positions.sort((a, b) => b.interviews - a.interviews).slice
 
 ### **2. Визуализации:**
 ```typescript
-// Графики из временных данных
-const chartData = createdLast7Days.map((count, index) => ({
-  date: getDateFromIndex(index),
-  value: count
-}));
-
 // Круговые диаграммы из группировок
 const pieData = Object.entries(byStatus).map(([status, count]) => ({
   label: status,
   value: count,
   percentage: (count / total) * 100
 }));
+
+// Прогресс-бары
+const progress = (finished / total) * 100;
 ```
 
 ### **3. Фильтры и сортировка:**
@@ -498,7 +482,7 @@ const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.create
 
 ### **Этап 1: База данных (0.5 дня)**
 1. Создать таблицу `activity_log`
-2. Добавить поля `source` и `level`
+2. Добавить поля `source` и `level` (если нет)
 3. Создать индексы
 
 ### **Этап 2: Модели и репозитории (1 день)**
@@ -573,8 +557,7 @@ const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.create
     "in_progress": 25,
     "finished": 75,
     "cancelled": 10
-  },
-  "scheduledLast7Days": [5, 8, 12, 6, 9, 11, 7]
+  }
 }
 ```
 
@@ -582,9 +565,6 @@ const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.create
 ```typescript
 // Процент успешности
 const successRate = (45 / 150) * 100; // 30%
-
-// Тренд роста
-const trend = calculateTrend([5, 8, 12, 6, 9, 11, 7]); // +40%
 
 // Круговая диаграмма
 const pieData = Object.entries(byStatus).map(([status, count]) => ({

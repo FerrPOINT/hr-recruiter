@@ -45,4 +45,16 @@
         <sqlFile path="db/changelog/changes/010-agents-table.sql"/>
     </changeSet>
 
+    <changeSet id="013-activity-log-table" author="ai">
+        <sqlFile path="db/changelog/changes/013-activity-log-table.sql"/>
+    </changeSet>
+
+    <changeSet id="014-add-candidate-source" author="ai">
+        <sqlFile path="db/changelog/changes/014-add-candidate-source.sql"/>
+    </changeSet>
+
+    <changeSet id="015-add-test-data" author="ai">
+        <sqlFile path="db/changelog/changes/015-add-test-data.sql"/>
+    </changeSet>
+
 </databaseChangeLog> 

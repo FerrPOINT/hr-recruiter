@@ -1160,40 +1160,6 @@ paths:
         '500':
           description: Internal Server Error - ошибка AI или системы
 
-  /stats/positions:
-    get:
-      operationId: getPositionsStats
-      tags:
-        - Analytics & Reports
-      summary: Статистика по вакансиям
-      security:
-        - AdminAuth: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PositionStats'
-
-  /stats/candidates:
-    get:
-      operationId: getCandidatesStats
-      tags:
-        - Analytics & Reports
-      summary: Статистика по кандидатам
-      security:
-        - AdminAuth: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CandidateStats'
-
   /stats/interviews:
     get:
       operationId: getInterviewsStats
@@ -1210,8 +1176,94 @@ paths:
               schema:
                 $ref: '#/components/schemas/InterviewStats'
 
+  /activity:
+    get:
+      operationId: getActivityFeed
+      tags:
+        - Analytics & Reports
+      summary: Получить ленту активности
+      description: Возвращает ленту активности пользователей в системе
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+            minimum: 1
+          description: Количество записей для получения
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [all, interview, position, candidate, hired]
+            default: all
+          description: Фильтр по типу активности
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Номер страницы (начиная с 0)
+      responses:
+        '200':
+          description: Лента активности
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPaginatedResponse'
+        '400':
+          description: Некорректные параметры
+        '500':
+          description: Ошибка сервера
+
+  /stats/positions:
+    get:
+      operationId: getPositionsStats
+      tags:
+        - Analytics & Reports
+      summary: Статистика по вакансиям
+      description: Возвращает расширенную статистику по вакансиям с группировками
+      security:
+        - AdminAuth: []
+      parameters:
+        - in: query
+          name: includeDetails
+          schema:
+            type: boolean
+            default: false
+          description: Включить детальную статистику с группировками
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionStats'
+
+  /stats/candidates:
+    get:
+      operationId: getCandidatesStats
+      tags:
+        - Analytics & Reports
+      summary: Статистика по кандидатам
+      description: Возвращает расширенную статистику по кандидатам с группировками
+      security:
+        - AdminAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateStats'
+
   /archive:
     get:
+      operationId: getArchive
       summary: Архив
       security:
         - AdminAuth: []
@@ -1227,6 +1279,7 @@ paths:
 
   /learn:
     get:
+      operationId: getLearn
       summary: Обучающие материалы
       security:
         - AdminAuth: []
@@ -2067,6 +2120,10 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/CandidateStatusEnum'
+        source:
+          type: string
+          enum: [direct, referral, jobBoard, social]
+          description: "Источник кандидата"
     
     BaseUserFields:
       type: object
@@ -2266,6 +2323,8 @@ components:
       properties:
         positionId:
           type: integer
+          format: int64
+          description: "ID позиции (если статистика для конкретной позиции)"
         interviewsTotal:
           type: integer
           description: "Всего собеседований"
@@ -2278,6 +2337,34 @@ components:
         interviewsUnsuccessful:
           type: integer
           description: "Неуспешно завершенные"
+        total:
+          type: integer
+          description: "Общее количество вакансий"
+        active:
+          type: integer
+          description: "Активные вакансии"
+        paused:
+          type: integer
+          description: "Вакансии на паузе"
+        archived:
+          type: integer
+          description: "Архивные вакансии"
+        byLevel:
+          type: object
+          properties:
+            junior:
+              type: integer
+              description: "Количество junior позиций"
+            middle:
+              type: integer
+              description: "Количество middle позиций"
+            senior:
+              type: integer
+              description: "Количество senior позиций"
+            lead:
+              type: integer
+              description: "Количество lead позиций"
+          description: "Группировка по уровням (если includeDetails=true)"
     
     Question:
       allOf:
@@ -2584,22 +2671,108 @@ components:
       properties:
         total:
           type: integer
+          description: "Общее количество кандидатов"
         inProgress:
           type: integer
+          description: "Кандидаты в процессе"
         finished:
           type: integer
+          description: "Завершенные кандидаты"
         hired:
           type: integer
+          description: "Нанятые кандидаты"
+        rejected:
+          type: integer
+          description: "Отклоненные кандидаты"
+        bySource:
+          type: object
+          properties:
+            direct:
+              type: integer
+              description: "Прямые кандидаты"
+            referral:
+              type: integer
+              description: "По рекомендации"
+            jobBoard:
+              type: integer
+              description: "С досок объявлений"
+            social:
+              type: integer
+              description: "Из социальных сетей"
+          description: "Группировка по источникам"
     
     InterviewStats:
       type: object
       properties:
         total:
           type: integer
+          description: "Общее количество интервью"
         successful:
           type: integer
+          description: "Успешно завершенные интервью"
         unsuccessful:
           type: integer
+          description: "Неуспешно завершенные интервью"
+        inProgress:
+          type: integer
+          description: "Интервью в процессе"
+        notStarted:
+          type: integer
+          description: "Интервью не начатые"
+        cancelled:
+          type: integer
+          description: "Отмененные интервью"
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: "ID записи активности"
+        type:
+          type: string
+          enum: [interview, position, candidate, hired, report, login]
+          description: "Тип активности"
+        title:
+          type: string
+          description: "Заголовок активности"
+        description:
+          type: string
+          description: "Описание активности"
+        userId:
+          type: integer
+          format: int64
+          description: "ID пользователя"
+        userName:
+          type: string
+          description: "Имя пользователя"
+        entityId:
+          type: integer
+          format: int64
+          description: "ID связанной сущности"
+        entityType:
+          type: string
+          enum: [interview, position, candidate, report]
+          description: "Тип связанной сущности"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Время создания записи"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: "Дополнительные данные"
+      required: [id, type, title, createdAt]
+
+    ActivityPaginatedResponse:
+      $ref: '#/components/schemas/PaginatedResponse'
+      description: "Пагинированный список записей активности"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityItem'
     
     MonthlyReport:
       type: object
@@ -3187,6 +3360,10 @@ components:
           type: boolean
           description: "Включить голосовой режим"
           default: false
+        includeCandidateData:
+          type: boolean
+          description: "Включить данные для кандидата"
+          default: true
         agentConfig:
           $ref: '#/components/schemas/AgentConfig'
         voiceSettings:
@@ -3203,21 +3380,24 @@ components:
           type: integer
           format: int64
           description: "ID интервью"
-        agentId:
-          type: string
-          description: "ID созданного агента"
-        sessionId:
-          type: string
-          description: "ID голосовой сессии"
         status:
           $ref: '#/components/schemas/InterviewStartStatusEnum'
           description: "Статус запуска"
         message:
           type: string
           description: "Дополнительная информация"
+        agentId:
+          type: string
+          description: "ID созданного агента (если voiceMode=true)"
+        sessionId:
+          type: string
+          description: "ID голосовой сессии (если voiceMode=true)"
         webhookUrl:
           type: string
-          description: "URL для webhook событий"
+          description: "URL для webhook событий (если voiceMode=true)"
+        candidateData:
+          $ref: '#/components/schemas/InterviewCandidateData'
+          description: "Данные для кандидата (если includeCandidateData=true)"
 
     # Enums
     AgentStatusEnum:
@@ -3244,6 +3424,140 @@ components:
       type: string
       enum: [AGENT_QUESTION, USER_ANSWER, AGENT_MESSAGE, SYSTEM_MESSAGE]
       description: "Тип голосового сообщения"
+
+    InterviewCandidateData:
+      type: object
+      description: "Минимальные данные для кандидата"
+      properties:
+        interview:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+            status:
+              $ref: '#/components/schemas/InterviewStatusEnum'
+            createdAt:
+              type: string
+              format: date-time
+            startedAt:
+              type: string
+              format: date-time
+            finishedAt:
+              type: string
+              format: date-time
+          required: [id, status, createdAt]
+        settings:
+          type: object
+          properties:
+            answerTime:
+              type: integer
+              description: "Время на ответ в секундах"
+              example: 120
+            language:
+              type: string
+              description: "Язык интервью"
+              example: "Русский"
+            saveAudio:
+              type: boolean
+              description: "Сохранять аудио"
+              example: true
+            saveVideo:
+              type: boolean
+              description: "Сохранять видео"
+              example: false
+            randomOrder:
+              type: boolean
+              description: "Случайный порядок вопросов"
+              example: false
+            minScore:
+              type: number
+              format: float
+              description: "Минимальный проходной балл"
+              example: 70.0
+          required: [answerTime, language, saveAudio, saveVideo, randomOrder, minScore]
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+              text:
+                type: string
+                description: "Текст вопроса"
+              type:
+                $ref: '#/components/schemas/QuestionTypeEnum'
+              order:
+                type: integer
+                description: "Порядок вопроса"
+              isRequired:
+                type: boolean
+                description: "Обязательный вопрос"
+            required: [id, text, type, order]
+          description: "Список вопросов для интервью"
+        position:
+          type: object
+          properties:
+            title:
+              type: string
+              description: "Название вакансии"
+              example: "Java Developer"
+            level:
+              $ref: '#/components/schemas/PositionLevelEnum'
+              description: "Уровень позиции"
+          required: [title, level]
+        progress:
+          type: object
+          properties:
+            currentQuestion:
+              type: integer
+              description: "Номер текущего вопроса (начиная с 0)"
+              example: 0
+            totalQuestions:
+              type: integer
+              description: "Общее количество вопросов"
+              example: 5
+            answeredQuestions:
+              type: integer
+              description: "Количество отвеченных вопросов"
+              example: 0
+            remainingTime:
+              type: integer
+              description: "Оставшееся время в секундах"
+              example: 600
+          required: [currentQuestion, totalQuestions, answeredQuestions, remainingTime]
+        checklist:
+          type: array
+          items:
+            type: object
+            properties:
+              text:
+                type: string
+                description: "Текст пункта чек-листа"
+              completed:
+                type: boolean
+                description: "Выполнен ли пункт"
+            required: [text, completed]
+          description: "Чек-лист для подготовки к интервью"
+        inviteInfo:
+          type: object
+          properties:
+            language:
+              type: string
+              description: "Язык интервью"
+              example: "Русский"
+            questionsCount:
+              type: integer
+              description: "Количество вопросов"
+              example: 5
+            estimatedDuration:
+              type: integer
+              description: "Примерная длительность в минутах"
+              example: 15
+          required: [language, questionsCount, estimatedDuration]
+      required: [interview, settings, questions, position, progress, checklist, inviteInfo]
 
   securitySchemes:
     CandidateAuth:

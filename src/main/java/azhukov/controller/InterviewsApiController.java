@@ -4,6 +4,8 @@ import azhukov.api.InterviewsApi;
 import azhukov.model.*;
 import azhukov.service.ElevenLabsAgentService;
 import azhukov.service.InterviewService;
+import azhukov.service.PositionService;
+import azhukov.service.QuestionService;
 import azhukov.service.VoiceInterviewService;
 import azhukov.util.PaginationUtils;
 import java.util.List;
@@ -29,6 +31,8 @@ public class InterviewsApiController extends BaseController implements Interview
   private final InterviewService interviewService;
   private final VoiceInterviewService voiceInterviewService;
   private final ElevenLabsAgentService elevenLabsAgentService;
+  private final PositionService positionService;
+  private final QuestionService questionService;
 
   @Override
   @PreAuthorize("hasRole('ADMIN')")
@@ -85,7 +89,7 @@ public class InterviewsApiController extends BaseController implements Interview
   }
 
   @Override
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'CANDIDATE')")
   public ResponseEntity<azhukov.model.Interview> finishInterview(Long id) {
     log.info("Manually finishing interview: {}", id);
     azhukov.entity.Interview finishedInterview = interviewService.finishInterview(id);
@@ -115,10 +119,18 @@ public class InterviewsApiController extends BaseController implements Interview
   public ResponseEntity<InterviewStartResponse> startInterview(
       Long id, Optional<InterviewStartRequest> interviewStartRequest) {
     log.info(
-        "Starting interview: {} with voice mode: {}",
+        "Starting interview: {} with voice mode: {}, includeCandidateData: {}",
         id,
-        interviewStartRequest.map(req -> req.getVoiceMode()).orElse(false));
+        interviewStartRequest.map(req -> req.getVoiceMode()).orElse(false),
+        interviewStartRequest.map(req -> req.getIncludeCandidateData()).orElse(true));
 
+    InterviewStartResponse response = new InterviewStartResponse();
+    response.setInterviewId(id);
+
+    // Запускаем интервью
+    interviewService.startInterview(id);
+
+    // Обрабатываем голосовой режим
     if (interviewStartRequest.isPresent() && interviewStartRequest.get().getVoiceMode()) {
       // Создаем агента ElevenLabs если нужно
       String agentId = null;
@@ -144,8 +156,6 @@ public class InterviewsApiController extends BaseController implements Interview
       VoiceSessionResponse voiceSession =
           voiceInterviewService.createVoiceSession(id, voiceRequest);
 
-      InterviewStartResponse response = new InterviewStartResponse();
-      response.setInterviewId(id);
       response.setAgentId(agentId != null ? agentId : voiceSession.getAgentId());
       response.setSessionId(voiceSession.getSessionId());
       response.setStatus(InterviewStartStatusEnum.AGENT_CREATED);
@@ -154,19 +164,20 @@ public class InterviewsApiController extends BaseController implements Interview
           voiceSession.getWebhookUrl() != null
               ? voiceSession.getWebhookUrl()
               : "/api/v1/webhooks/elevenlabs/events");
-
-      return ResponseEntity.ok(response);
     } else {
-      // Обычный старт интервью
-      interviewService.startInterview(id);
-
-      InterviewStartResponse response = new InterviewStartResponse();
-      response.setInterviewId(id);
       response.setStatus(InterviewStartStatusEnum.STARTED);
       response.setMessage("Interview started successfully");
-
-      return ResponseEntity.ok(response);
     }
+
+    // Добавляем данные для кандидата если запрошено
+    if (interviewStartRequest.isPresent()
+        && interviewStartRequest.get().getIncludeCandidateData() != null
+        && interviewStartRequest.get().getIncludeCandidateData()) {
+      InterviewCandidateData candidateData = buildCandidateData(id);
+      response.setCandidateData(candidateData);
+    }
+
+    return ResponseEntity.ok(response);
   }
 
   @Override
@@ -179,5 +190,107 @@ public class InterviewsApiController extends BaseController implements Interview
     azhukov.model.Interview interviewDto =
         interviewService.getInterviewMapper().toDto(updatedInterview);
     return ResponseEntity.ok(interviewDto);
+  }
+
+  /** Строит данные для кандидата при старте интервью */
+  private InterviewCandidateData buildCandidateData(Long interviewId) {
+    // Получаем интервью
+    azhukov.entity.Interview interview = interviewService.findById(interviewId).orElseThrow();
+
+    // Получаем позицию
+    azhukov.entity.Position position =
+        positionService.findById(interview.getPosition().getId()).orElseThrow();
+
+    // Получаем вопросы
+    List<azhukov.entity.Question> questions =
+        questionService.getPositionQuestions(position.getId());
+
+    InterviewCandidateData data = new InterviewCandidateData();
+
+    // Базовые данные интервью
+    InterviewCandidateDataInterview interviewData = new InterviewCandidateDataInterview();
+    interviewData.setId(interview.getId());
+    interviewData.setStatus(InterviewStatusEnum.fromValue(interview.getStatus().name()));
+    interviewData.setCreatedAt(interview.getCreatedAt().atOffset(java.time.ZoneOffset.UTC));
+    interviewData.setStartedAt(
+        interview.getStartedAt() != null
+            ? interview.getStartedAt().atOffset(java.time.ZoneOffset.UTC)
+            : null);
+    interviewData.setFinishedAt(
+        interview.getFinishedAt() != null
+            ? interview.getFinishedAt().atOffset(java.time.ZoneOffset.UTC)
+            : null);
+    data.setInterview(interviewData);
+
+    // Настройки из позиции
+    InterviewCandidateDataSettings settings = new InterviewCandidateDataSettings();
+    settings.setAnswerTime(
+        position.getAnswerTime() != null ? position.getAnswerTime().longValue() : 120L);
+    settings.setLanguage(position.getLanguage() != null ? position.getLanguage() : "Русский");
+    settings.setSaveAudio(position.getSaveAudio() != null ? position.getSaveAudio() : true);
+    settings.setSaveVideo(position.getSaveVideo() != null ? position.getSaveVideo() : false);
+    settings.setRandomOrder(position.getRandomOrder() != null ? position.getRandomOrder() : false);
+    settings.setMinScore(
+        position.getMinScore() != null ? position.getMinScore().floatValue() : 70.0f);
+    data.setSettings(settings);
+
+    // Вопросы
+    List<InterviewCandidateDataQuestionsInner> questionsData =
+        questions.stream()
+            .map(
+                q -> {
+                  InterviewCandidateDataQuestionsInner questionData =
+                      new InterviewCandidateDataQuestionsInner();
+                  questionData.setId(q.getId());
+                  questionData.setText(q.getText());
+                  questionData.setType(QuestionTypeEnum.fromValue(q.getType().name()));
+                  questionData.setOrder(q.getOrder() != null ? q.getOrder().longValue() : 0L);
+                  questionData.setIsRequired(true); // По умолчанию все вопросы обязательные
+                  return questionData;
+                })
+            .toList();
+    data.setQuestions(questionsData);
+
+    // Информация о позиции
+    InterviewCandidateDataPosition positionData = new InterviewCandidateDataPosition();
+    positionData.setTitle(position.getTitle());
+    positionData.setLevel(PositionLevelEnum.fromValue(position.getLevel().name()));
+    data.setPosition(positionData);
+
+    // Прогресс
+    InterviewCandidateDataProgress progress = new InterviewCandidateDataProgress();
+    progress.setCurrentQuestion(0L);
+    progress.setTotalQuestions((long) questions.size());
+    progress.setAnsweredQuestions(0L);
+    progress.setRemainingTime((long) (questions.size() * settings.getAnswerTime().intValue()));
+    data.setProgress(progress);
+
+    // Чек-лист
+    List<InterviewCandidateDataChecklistInner> checklist =
+        List.of(
+            createChecklistItem("Проверьте работу микрофона", false),
+            createChecklistItem("Убедитесь в стабильном интернет-соединении", false),
+            createChecklistItem("Подготовьте тихое место для интервью", false),
+            createChecklistItem("Закройте лишние приложения", false));
+    data.setChecklist(checklist);
+
+    // Информация для приглашения
+    InterviewCandidateDataInviteInfo inviteInfo = new InterviewCandidateDataInviteInfo();
+    inviteInfo.setLanguage(settings.getLanguage());
+    inviteInfo.setQuestionsCount((long) questions.size());
+    inviteInfo.setEstimatedDuration(
+        (long)
+            (questions.size() * (settings.getAnswerTime().intValue() / 60)
+                + 5)); // +5 минут на подготовку
+    data.setInviteInfo(inviteInfo);
+
+    return data;
+  }
+
+  private InterviewCandidateDataChecklistInner createChecklistItem(String text, boolean completed) {
+    InterviewCandidateDataChecklistInner item = new InterviewCandidateDataChecklistInner();
+    item.setText(text);
+    item.setCompleted(completed);
+    return item;
   }
 }

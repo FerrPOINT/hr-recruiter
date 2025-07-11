@@ -164,4 +164,22 @@ public interface PositionRepository extends BaseRepository<Position, Long> {
           + "LEFT JOIN FETCH p.createdBy "
           + "WHERE p.id = :id")
   Optional<Position> findByIdWithTopicsAndTeam(@Param("id") Long id);
+
+  // === МЕТОДЫ ДЛЯ ВИДЖЕТОВ ===
+
+  /** Подсчитывает количество вакансий по уровню */
+  long countByLevel(Position.Level level);
+
+  /** Получить группировку вакансий по уровням */
+  @Query("SELECT p.level, COUNT(p) FROM Position p GROUP BY p.level")
+  List<Object[]> countByLevelGrouped();
+
+  /** Находит вакансии по уровню */
+  List<Position> findByLevel(Position.Level level);
+
+  /** Находит вакансии по уровню с пагинацией */
+  Page<Position> findByLevel(Position.Level level, Pageable pageable);
+
+  /** Подсчитывает количество вакансий по статусу и уровню */
+  long countByStatusAndLevel(Position.Status status, Position.Level level);
 }

@@ -27,6 +27,7 @@ public interface CandidateMapper extends CommonMapper {
   @Mapping(target = "email", source = "email")
   @Mapping(target = "phone", source = "phone")
   @Mapping(target = "status", source = "status")
+  @Mapping(target = "source", source = "source")
   @Mapping(target = "interview", ignore = true) // Поле отсутствует в entity
   @Mapping(target = "positionId", source = "position.id")
   azhukov.model.Candidate toDto(Candidate entity);

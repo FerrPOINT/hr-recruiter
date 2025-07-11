@@ -5,17 +5,22 @@ import azhukov.entity.Candidate;
 import azhukov.entity.Interview;
 import azhukov.entity.Position;
 import azhukov.model.CandidateStats;
+import azhukov.model.CandidateStatsBySource;
 import azhukov.model.InterviewStats;
 import azhukov.model.MonthlyReport;
+import azhukov.model.PaginatedResponse;
 import azhukov.model.PositionStats;
+import azhukov.model.PositionStatsByLevel;
 import azhukov.repository.CandidateRepository;
 import azhukov.repository.InterviewRepository;
 import azhukov.repository.PositionRepository;
+import azhukov.service.ActivityService;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +40,16 @@ public class AnalyticsReportsController extends BaseController implements Analyt
   private final CandidateRepository candidateRepository;
   private final InterviewRepository interviewRepository;
   private final PositionRepository positionRepository;
+  private final ActivityService activityService;
+
+  @Override
+  public ResponseEntity<PaginatedResponse> getActivityFeed(
+      Optional<Long> limit, Optional<String> type, Optional<Long> page) {
+    log.info("Getting activity feed with limit: {}, type: {}, page: {}", limit, type, page);
+
+    PaginatedResponse response = activityService.getActivityFeed(limit, type, page);
+    return ResponseEntity.ok(response);
+  }
 
   @Override
   public ResponseEntity<CandidateStats> getCandidatesStats() {
@@ -45,12 +60,51 @@ public class AnalyticsReportsController extends BaseController implements Analyt
     long inProgress = candidateRepository.countByStatus(Candidate.Status.IN_PROGRESS);
     long finished = candidateRepository.countByStatus(Candidate.Status.FINISHED);
     long hired = candidateRepository.countByStatus(Candidate.Status.HIRED);
+    long rejected = candidateRepository.countByStatus(Candidate.Status.REJECTED);
 
     CandidateStats stats = new CandidateStats();
     stats.setTotal(total);
     stats.setInProgress(inProgress);
     stats.setFinished(finished);
     stats.setHired(hired);
+    stats.setRejected(rejected);
+
+    // Группировка по источникам
+    CandidateStatsBySource bySource = new CandidateStatsBySource();
+
+    // Используем более безопасный подход - получаем все записи и группируем в памяти
+    List<Candidate> allCandidates = candidateRepository.findAll();
+
+    long directCount =
+        allCandidates.stream()
+            .filter(c -> c.getSource() != null && "direct".equals(c.getSource()))
+            .count();
+    long referralCount =
+        allCandidates.stream()
+            .filter(c -> c.getSource() != null && "referral".equals(c.getSource()))
+            .count();
+    long jobBoardCount =
+        allCandidates.stream()
+            .filter(c -> c.getSource() != null && "jobBoard".equals(c.getSource()))
+            .count();
+    long socialCount =
+        allCandidates.stream()
+            .filter(c -> c.getSource() != null && "social".equals(c.getSource()))
+            .count();
+
+    log.info(
+        "Source counts - direct: {}, referral: {}, jobBoard: {}, social: {}",
+        directCount,
+        referralCount,
+        jobBoardCount,
+        socialCount);
+
+    bySource.setDirect(directCount);
+    bySource.setReferral(referralCount);
+    bySource.setJobBoard(jobBoardCount);
+    bySource.setSocial(socialCount);
+
+    stats.setBySource(bySource);
 
     return ResponseEntity.ok(stats);
   }
@@ -63,45 +117,59 @@ public class AnalyticsReportsController extends BaseController implements Analyt
     long total = interviewRepository.count();
     long successful = interviewRepository.countSuccessful();
     long unsuccessful = interviewRepository.countUnsuccessful();
+    long inProgress = interviewRepository.countByStatus(Interview.Status.IN_PROGRESS);
+    long notStarted = interviewRepository.countByStatus(Interview.Status.NOT_STARTED);
+    long cancelled =
+        interviewRepository.countByStatus(Interview.Status.FINISHED) - successful - unsuccessful;
 
     InterviewStats stats = new InterviewStats();
     stats.setTotal(total);
     stats.setSuccessful(successful);
     stats.setUnsuccessful(unsuccessful);
+    stats.setInProgress(inProgress);
+    stats.setNotStarted(notStarted);
+    stats.setCancelled(cancelled);
 
     return ResponseEntity.ok(stats);
   }
 
   @Override
-  public ResponseEntity<List<PositionStats>> getPositionsStats() {
-    log.info("Getting positions statistics");
+  public ResponseEntity<PositionStats> getPositionsStats(Optional<Boolean> includeDetails) {
+    log.info("Getting positions statistics with includeDetails: {}", includeDetails);
 
-    // TODO: Оптимизировать - использовать один запрос с JOIN вместо N+1
-    List<Position> positions = positionRepository.findByStatus(Position.Status.ACTIVE);
+    // Получаем общую статистику по вакансиям
+    long total = positionRepository.count();
+    long active = positionRepository.countByStatus(Position.Status.ACTIVE);
+    long paused = positionRepository.countByStatus(Position.Status.PAUSED);
+    long archived = positionRepository.countByStatus(Position.Status.ARCHIVED);
 
-    List<PositionStats> statsList = new ArrayList<>();
+    // Получаем статистику по интервью
+    long interviewsTotal = interviewRepository.count();
+    long interviewsSuccessful = interviewRepository.countSuccessful();
+    long interviewsUnsuccessful = interviewRepository.countUnsuccessful();
+    long interviewsInProgress = interviewRepository.countByStatus(Interview.Status.IN_PROGRESS);
 
-    for (Position position : positions) {
-      // Оптимизированные запросы для каждой вакансии
-      long interviewsTotal = positionRepository.countInterviewsByPosition(position.getId());
-      long interviewsSuccessful =
-          positionRepository.countSuccessfulInterviewsByPosition(position.getId());
-      long interviewsUnsuccessful =
-          positionRepository.countUnsuccessfulInterviewsByPosition(position.getId());
-      long interviewsInProgress =
-          positionRepository.countInProgressInterviewsByPosition(position.getId());
+    PositionStats stats = new PositionStats();
+    stats.setTotal(total);
+    stats.setActive(active);
+    stats.setPaused(paused);
+    stats.setArchived(archived);
+    stats.setInterviewsTotal(interviewsTotal);
+    stats.setInterviewsSuccessful(interviewsSuccessful);
+    stats.setInterviewsUnsuccessful(interviewsUnsuccessful);
+    stats.setInterviewsInProgress(interviewsInProgress);
 
-      PositionStats stats = new PositionStats();
-      stats.setPositionId(position.getId());
-      stats.setInterviewsTotal(interviewsTotal);
-      stats.setInterviewsSuccessful(interviewsSuccessful);
-      stats.setInterviewsUnsuccessful(interviewsUnsuccessful);
-      stats.setInterviewsInProgress(interviewsInProgress);
-
-      statsList.add(stats);
+    // Группировка по уровням если includeDetails=true
+    if (includeDetails.orElse(false)) {
+      PositionStatsByLevel byLevel = new PositionStatsByLevel();
+      byLevel.setJunior(positionRepository.countByLevel(Position.Level.JUNIOR));
+      byLevel.setMiddle(positionRepository.countByLevel(Position.Level.MIDDLE));
+      byLevel.setSenior(positionRepository.countByLevel(Position.Level.SENIOR));
+      byLevel.setLead(positionRepository.countByLevel(Position.Level.LEAD));
+      stats.setByLevel(byLevel);
     }
 
-    return ResponseEntity.ok(statsList);
+    return ResponseEntity.ok(stats);
   }
 
   @Override

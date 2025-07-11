@@ -64,6 +64,9 @@ public class Candidate {
   @Column(name = "experience_years")
   private Integer experienceYears;
 
+  @Column(name = "source", length = 50)
+  private String source;
+
   @ElementCollection
   @CollectionTable(name = "candidate_skills", joinColumns = @JoinColumn(name = "candidate_id"))
   @Column(name = "skill", length = 100)

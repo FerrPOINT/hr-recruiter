@@ -1,7 +1,7 @@
 package azhukov.controller;
 
 import azhukov.api.DefaultApi;
-import azhukov.model.LearnGet200ResponseInner;
+import azhukov.model.GetLearn200ResponseInner;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DefaultController extends BaseController implements DefaultApi {
 
   @Override
-  public ResponseEntity<List<Object>> archiveGet() {
+  public ResponseEntity<List<Object>> getArchive() {
     log.info("Getting archive data");
 
     // Возвращаем пустой список архивных данных
@@ -27,12 +27,12 @@ public class DefaultController extends BaseController implements DefaultApi {
   }
 
   @Override
-  public ResponseEntity<List<LearnGet200ResponseInner>> learnGet() {
+  public ResponseEntity<List<GetLearn200ResponseInner>> getLearn() {
     log.info("Getting learning materials");
 
     // Возвращаем базовые обучающие материалы
     // В будущем здесь будет логика получения материалов из базы данных
-    LearnGet200ResponseInner material = new LearnGet200ResponseInner();
+    GetLearn200ResponseInner material = new GetLearn200ResponseInner();
     material.setTitle("Добро пожаловать в HR Recruiter");
     material.setDescription("Руководство по использованию платформы");
     material.setUrl("https://docs.hr-recruiter.com/getting-started");

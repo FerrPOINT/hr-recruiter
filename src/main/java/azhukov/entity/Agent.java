@@ -36,7 +36,7 @@ public class Agent {
   @Builder.Default
   private AgentStatusEnum status = AgentStatusEnum.CREATING;
 
-  @Column(name = "config", columnDefinition = "JSON")
+  @Column(name = "config", columnDefinition = "JSONB")
   private String config; // JSON строка
 
   @Column(name = "interview_id")

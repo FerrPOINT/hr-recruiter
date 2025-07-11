@@ -234,20 +234,11 @@ elevenlabs:
     enable-timestamps: true
     enable-audio-quality-analysis: true
     min-confidence-threshold: 0.7
-        similarity-boost: 0.75
-        style: 0.0
-        max-answer-duration-seconds: 120
-        min-confidence-threshold: 0.7
-        # ElevenLabs Conversational AI Configuration
-        default-agent-id: ${ELEVEN_LABS_AGENT_ID:}
-        default-voice-id: "21m00Tcm4TlvDq8ikWAM"  # Rachel - профессиональный голос
-        default-language: "ru"
-        max-session-duration-minutes: 60
-        response-timeout-seconds: 30
-        enable-emotion-detection: true
-        enable-speaker-detection: false
-        enable-timestamps: true
-        enable-audio-quality-analysis: true
+    max-answer-duration-seconds: 120
+    # ElevenLabs Conversational AI Configuration
+    default-agent-id: ${ELEVEN_LABS_AGENT_ID:}
+    default-voice-id: "21m00Tcm4TlvDq8ikWAM"  # Rachel - профессиональный голос
+    default-language: "ru"
 
 # Transcription Configuration
 transcription:
