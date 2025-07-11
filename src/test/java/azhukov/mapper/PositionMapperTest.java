@@ -8,9 +8,12 @@ import azhukov.model.PositionStatusEnum;
 import azhukov.model.PositionUpdateRequest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest
 class PositionMapperTest {
-  private final PositionMapperImpl mapper = new PositionMapperImpl();
+  @Autowired private PositionMapper mapper;
 
   @Test
   void toDto_and_toEntity_basicMapping() {
@@ -21,6 +24,8 @@ class PositionMapperTest {
             .company("Acme")
             .description("desc")
             .status(Position.Status.ACTIVE)
+            .interviews(List.of())
+            .team(List.of())
             .build();
     var dto = mapper.toDto(entity);
     assertThat(dto).isNotNull();
@@ -42,7 +47,13 @@ class PositionMapperTest {
   @Test
   void updateEntityFromRequest_shouldUpdateFields() {
     Position entity =
-        Position.builder().title("Old").company("OldCo").status(Position.Status.PAUSED).build();
+        Position.builder()
+            .title("Old")
+            .company("OldCo")
+            .status(Position.Status.PAUSED)
+            .interviews(List.of())
+            .team(List.of())
+            .build();
     PositionUpdateRequest req =
         new PositionUpdateRequest()
             .title("New")
@@ -60,8 +71,22 @@ class PositionMapperTest {
 
   @Test
   void toDtoList_shouldMapList() {
-    Position e1 = Position.builder().title("A").company("B").status(Position.Status.ACTIVE).build();
-    Position e2 = Position.builder().title("C").company("D").status(Position.Status.PAUSED).build();
+    Position e1 =
+        Position.builder()
+            .title("A")
+            .company("B")
+            .status(Position.Status.ACTIVE)
+            .interviews(List.of())
+            .team(List.of())
+            .build();
+    Position e2 =
+        Position.builder()
+            .title("C")
+            .company("D")
+            .status(Position.Status.PAUSED)
+            .interviews(List.of())
+            .team(List.of())
+            .build();
     var dtos = mapper.toDtoList(List.of(e1, e2));
     assertThat(dtos).hasSize(2);
     assertThat(dtos.get(0).getTitle()).isEqualTo("A");

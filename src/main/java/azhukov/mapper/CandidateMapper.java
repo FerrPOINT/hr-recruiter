@@ -27,8 +27,10 @@ public interface CandidateMapper extends CommonMapper {
   @Mapping(target = "email", source = "email")
   @Mapping(target = "phone", source = "phone")
   @Mapping(target = "status", source = "status")
-  @Mapping(target = "source", source = "source")
-  @Mapping(target = "interview", ignore = true) // Поле отсутствует в entity
+  @Mapping(target = "resumeUrl", source = "resumeUrl")
+  @Mapping(target = "coverLetter", source = "coverLetter")
+  @Mapping(target = "experienceYears", source = "experienceYears")
+  @Mapping(target = "skills", source = "skills")
   @Mapping(target = "positionId", source = "position.id")
   azhukov.model.Candidate toDto(Candidate entity);
 
@@ -91,5 +93,29 @@ public interface CandidateMapper extends CommonMapper {
   /** Преобразует LocalDateTime в OffsetDateTime. */
   default OffsetDateTime toOffsetDateTime(java.time.LocalDateTime localDateTime) {
     return localDateTime != null ? localDateTime.atOffset(ZoneOffset.UTC) : null;
+  }
+
+  /** Преобразует статус кандидата */
+  default azhukov.model.CandidateStatusEnum statusToDto(azhukov.entity.Candidate.Status status) {
+    if (status == null) return null;
+    return switch (status) {
+      case NEW -> azhukov.model.CandidateStatusEnum.NEW;
+      case IN_PROGRESS -> azhukov.model.CandidateStatusEnum.IN_PROGRESS;
+      case FINISHED -> azhukov.model.CandidateStatusEnum.FINISHED;
+      case REJECTED -> azhukov.model.CandidateStatusEnum.REJECTED;
+      case HIRED -> azhukov.model.CandidateStatusEnum.HIRED;
+    };
+  }
+
+  /** Преобразует статус кандидата из DTO */
+  default azhukov.entity.Candidate.Status statusToEntity(azhukov.model.CandidateStatusEnum status) {
+    if (status == null) return null;
+    return switch (status) {
+      case NEW -> azhukov.entity.Candidate.Status.NEW;
+      case IN_PROGRESS -> azhukov.entity.Candidate.Status.IN_PROGRESS;
+      case FINISHED -> azhukov.entity.Candidate.Status.FINISHED;
+      case REJECTED -> azhukov.entity.Candidate.Status.REJECTED;
+      case HIRED -> azhukov.entity.Candidate.Status.HIRED;
+    };
   }
 }

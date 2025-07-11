@@ -22,7 +22,26 @@ public interface InterviewAnswerMapper {
   @Mapping(target = "questionId", source = "question.id")
   @Mapping(target = "answerText", source = "answerText")
   @Mapping(target = "audioUrl", source = "audioUrl")
-  @Mapping(target = "createdAt", qualifiedByName = "answerLocalDateTimeToOffsetDateTime")
+  @Mapping(target = "videoUrl", source = "videoUrl")
+  @Mapping(target = "rawTranscription", source = "rawTranscription")
+  @Mapping(target = "formattedTranscription", source = "formattedTranscription")
+  @Mapping(target = "transcript", source = "formattedTranscription")
+  @Mapping(target = "score", source = "score")
+  @Mapping(target = "scoreJustification", source = "scoreJustification")
+  @Mapping(target = "feedback", source = "feedback")
+  @Mapping(target = "durationSeconds", source = "durationSeconds")
+  @Mapping(target = "isCorrect", source = "isCorrect")
+  @Mapping(target = "voiceSessionId", source = "voiceSessionId")
+  @Mapping(target = "voiceConfidence", source = "voiceConfidence")
+  @Mapping(target = "voiceEmotion", source = "voiceEmotion")
+  @Mapping(target = "voiceSpeakerId", source = "voiceSpeakerId")
+  @Mapping(target = "voiceAudioUrl", source = "voiceAudioUrl")
+  @Mapping(target = "voiceProcessingTime", source = "voiceProcessingTime")
+  @Mapping(target = "voiceQualityScore", source = "voiceQualityScore")
+  @Mapping(
+      target = "createdAt",
+      source = "createdAt",
+      qualifiedByName = "answerLocalDateTimeToOffsetDateTime")
   azhukov.model.InterviewAnswer toDto(InterviewAnswer interviewAnswer);
 
   /** Преобразует InterviewAnswerCreateRequest в InterviewAnswer entity */

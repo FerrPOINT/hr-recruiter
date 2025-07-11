@@ -278,10 +278,10 @@ class InterviewServiceTest {
   @Test
   void getInterviewsByPosition_Success() {
     // Arrange
-    List<azhukov.entity.Interview> interviews = Arrays.asList(testInterview);
+    testPosition.setInterviews(Arrays.asList(testInterview));
     when(positionRepository.findById(1L)).thenReturn(Optional.of(testPosition));
-    when(interviewRepository.findByPosition(testPosition)).thenReturn(interviews);
-    when(interviewMapper.toDtoList(any())).thenReturn(Arrays.asList(new azhukov.model.Interview()));
+    when(interviewMapper.toDtoList(org.mockito.ArgumentMatchers.anyList()))
+        .thenReturn(Arrays.asList(new azhukov.model.Interview()));
 
     // Act
     List<azhukov.model.Interview> result = interviewService.getInterviewsByPosition(1L);
@@ -290,7 +290,6 @@ class InterviewServiceTest {
     assertNotNull(result);
     assertEquals(1, result.size());
     verify(positionRepository).findById(1L);
-    verify(interviewRepository).findByPosition(testPosition);
   }
 
   @Test

@@ -24,6 +24,8 @@ public interface QuestionMapper extends CommonMapper {
   @Mapping(target = "type", expression = "java(toQuestionTypeEnum(entity.getType()))")
   @Mapping(target = "order", source = "order")
   @Mapping(target = "isRequired", source = "required")
+  @Mapping(target = "maxDuration", source = "maxDuration")
+  @Mapping(target = "options", source = "options")
   @Mapping(target = "evaluationCriteria", ignore = true) // Поле отсутствует в entity
   @Mapping(
       target = "positionId",

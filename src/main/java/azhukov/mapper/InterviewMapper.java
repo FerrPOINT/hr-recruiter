@@ -16,16 +16,25 @@ import org.mapstruct.ReportingPolicy;
  * Маппер для преобразования между сущностью Interview и DTO. Использует MapStruct для
  * автоматической генерации кода.
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    uses = {CandidateMapper.class, InterviewAnswerMapper.class})
 public interface InterviewMapper extends CommonMapper {
 
   /** Преобразует сущность Interview в DTO */
-  @Mapping(source = "candidate.id", target = "candidateId")
-  @Mapping(source = "position.id", target = "positionId")
+  @Mapping(source = "candidate", target = "candidateId", qualifiedByName = "candidateToId")
+  @Mapping(source = "position", target = "positionId", qualifiedByName = "positionToId")
   @Mapping(source = "status", target = "status")
   @Mapping(source = "result", target = "result")
   @Mapping(source = "answers", target = "answers")
   @Mapping(source = "aiScore", target = "aiScore")
+  @Mapping(source = "notes", target = "notes")
+  @Mapping(source = "voiceSessionId", target = "voiceSessionId")
+  @Mapping(source = "voiceAgentId", target = "voiceAgentId")
+  @Mapping(source = "voiceEnabled", target = "voiceEnabled")
+  @Mapping(source = "voiceLanguage", target = "voiceLanguage")
+  @Mapping(source = "voiceVoiceId", target = "voiceVoiceId")
   @Mapping(source = "candidate", target = "candidate")
   @Mapping(
       source = "createdAt",
@@ -38,6 +47,14 @@ public interface InterviewMapper extends CommonMapper {
   @Mapping(
       source = "finishedAt",
       target = "finishedAt",
+      qualifiedByName = "interviewLocalDateTimeToOffsetDateTime")
+  @Mapping(
+      source = "voiceStartedAt",
+      target = "voiceStartedAt",
+      qualifiedByName = "interviewLocalDateTimeToOffsetDateTime")
+  @Mapping(
+      source = "voiceFinishedAt",
+      target = "voiceFinishedAt",
       qualifiedByName = "interviewLocalDateTimeToOffsetDateTime")
   azhukov.model.Interview toDto(Interview interview);
 
@@ -52,6 +69,14 @@ public interface InterviewMapper extends CommonMapper {
   @Mapping(target = "updatedAt", ignore = true)
   @Mapping(target = "startedAt", ignore = true)
   @Mapping(target = "finishedAt", ignore = true)
+  @Mapping(
+      target = "voiceStartedAt",
+      source = "voiceStartedAt",
+      qualifiedByName = "interviewOffsetDateTimeToLocalDateTime")
+  @Mapping(
+      target = "voiceFinishedAt",
+      source = "voiceFinishedAt",
+      qualifiedByName = "interviewOffsetDateTimeToLocalDateTime")
   Interview toEntity(azhukov.model.Interview interviewDto);
 
   /** Преобразует статус собеседования */
@@ -110,5 +135,17 @@ public interface InterviewMapper extends CommonMapper {
   default LocalDateTime interviewOffsetDateTimeToLocalDateTime(OffsetDateTime offsetDateTime) {
     if (offsetDateTime == null) return null;
     return offsetDateTime.toLocalDateTime();
+  }
+
+  /** Безопасно получает ID кандидата */
+  @Named("candidateToId")
+  default Long candidateToId(azhukov.entity.Candidate candidate) {
+    return candidate != null ? candidate.getId() : null;
+  }
+
+  /** Безопасно получает ID позиции */
+  @Named("positionToId")
+  default Long positionToId(azhukov.entity.Position position) {
+    return position != null ? position.getId() : null;
   }
 }

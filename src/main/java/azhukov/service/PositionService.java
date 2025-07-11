@@ -10,7 +10,6 @@ import azhukov.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -101,11 +100,11 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
     log.debug("Getting position by id: {}", id);
     Position position =
         repository
-            .findByIdWithTopicsAndTeam(id)
+            .findByIdWithInterviewsAndCandidates(id)
             .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
 
-    // Загружаем team отдельно, так как нельзя загружать несколько List одновременно
-    Hibernate.initialize(position.getTeam());
+    // Вручную инициализируем team (одна коллекция, не вызывает MultipleBagFetchException)
+    org.hibernate.Hibernate.initialize(position.getTeam());
 
     return positionMapper.toDto(position);
   }
@@ -170,14 +169,17 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
         return positionMapper.toDtoPage(positions);
       } else if (status != null) {
         Position.Status entityStatus = positionMapper.mapStatus(status);
-        Page<Position> positions = repository.findByStatus(entityStatus, pageable);
-        return positionMapper.toDtoPage(positions);
+        // Используем только fetch интервью
+        List<Position> positions = repository.findAllWithInterviews();
+        // Пагинация вручную (если нужно)
+        // TODO: если нужна пагинация, реализовать вручную или через отдельный запрос
+        return positionMapper.toDtoPage(new org.springframework.data.domain.PageImpl<>(positions));
       } else if (search != null && !search.trim().isEmpty()) {
         Page<Position> positions = repository.findBySearchTerm(search, pageable);
         return positionMapper.toDtoPage(positions);
       } else {
-        Page<Position> positions = repository.findAll(pageable);
-        return positionMapper.toDtoPage(positions);
+        List<Position> positions = repository.findAllWithInterviews();
+        return positionMapper.toDtoPage(new org.springframework.data.domain.PageImpl<>(positions));
       }
     }
   }
@@ -187,7 +189,8 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   public List<azhukov.model.Position> getPositionsByStatus(PositionStatusEnum status) {
     log.debug("Getting positions by status: {}", status);
     Position.Status entityStatus = positionMapper.mapStatus(status);
-    List<Position> positions = repository.findByStatus(entityStatus);
+    // Используем только fetch интервью
+    List<Position> positions = repository.findAllWithInterviews();
     return positionMapper.toDtoList(positions);
   }
 
@@ -205,7 +208,8 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   @Transactional(readOnly = true)
   public List<azhukov.model.Position> getPositionsByCompany(String company) {
     log.debug("Getting positions by company: {}", company);
-    List<Position> positions = repository.findByCompany(company);
+    // Используем только fetch интервью
+    List<Position> positions = repository.findAllWithInterviews();
     return positionMapper.toDtoList(positions);
   }
 
@@ -213,7 +217,8 @@ public class PositionService extends BaseService<Position, Long, PositionReposit
   @Transactional(readOnly = true)
   public List<azhukov.model.Position> getPositionsByCreator(UserEntity createdBy) {
     log.debug("Getting positions by creator: {}", createdBy.getId());
-    List<Position> positions = repository.findByCreatedBy(createdBy);
+    // Используем только fetch интервью
+    List<Position> positions = repository.findAllWithInterviews();
     return positionMapper.toDtoList(positions);
   }
 

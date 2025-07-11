@@ -1,5 +1,6 @@
 package azhukov.entity;
 
+import azhukov.config.JsonbConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.*;
@@ -40,7 +41,8 @@ public class ActivityLog {
   @Enumerated(EnumType.STRING)
   private EntityType entityType;
 
-  @Column(name = "metadata", columnDefinition = "JSONB")
+  @Convert(converter = JsonbConverter.class)
+  @Column(name = "metadata", columnDefinition = "jsonb")
   private String metadata; // JSON строка
 
   @CreationTimestamp

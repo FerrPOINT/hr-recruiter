@@ -114,7 +114,9 @@ class PositionServiceTest {
   @Test
   void getPositionById_Success() {
     // Arrange
-    when(positionRepository.findByIdWithTopicsAndTeam(1L)).thenReturn(Optional.of(testPosition));
+    testPosition.setTeam(List.of(testUser));
+    when(positionRepository.findByIdWithInterviewsAndCandidates(1L))
+        .thenReturn(Optional.of(testPosition));
     when(positionMapper.toDto(testPosition)).thenReturn(testPositionDto);
 
     // Act
@@ -123,20 +125,20 @@ class PositionServiceTest {
     // Assert
     assertNotNull(result);
     assertEquals(testPositionDto.getId(), result.getId());
-    verify(positionRepository).findByIdWithTopicsAndTeam(1L);
+    verify(positionRepository).findByIdWithInterviewsAndCandidates(1L);
     verify(positionMapper).toDto(testPosition);
   }
 
   @Test
   void getPositionById_PositionNotFound_ThrowsResourceNotFoundException() {
     // Arrange
-    when(positionRepository.findByIdWithTopicsAndTeam(1L)).thenReturn(Optional.empty());
+    when(positionRepository.findByIdWithInterviewsAndCandidates(1L)).thenReturn(Optional.empty());
 
     // Act & Assert
     ResourceNotFoundException exception =
         assertThrows(ResourceNotFoundException.class, () -> positionService.getPositionById(1L));
     assertEquals("Position not found with id: 1", exception.getMessage());
-    verify(positionRepository).findByIdWithTopicsAndTeam(1L);
+    verify(positionRepository).findByIdWithInterviewsAndCandidates(1L);
   }
 
   @Test
@@ -223,7 +225,7 @@ class PositionServiceTest {
     List<Position> positions = Arrays.asList(testPosition);
     List<azhukov.model.Position> positionDtos = Arrays.asList(testPositionDto);
     when(positionMapper.mapStatus(status)).thenReturn(Position.Status.ACTIVE);
-    when(positionRepository.findByStatus(Position.Status.ACTIVE)).thenReturn(positions);
+    when(positionRepository.findAllWithInterviews()).thenReturn(positions);
     when(positionMapper.toDtoList(positions)).thenReturn(positionDtos);
 
     // Act
@@ -233,7 +235,7 @@ class PositionServiceTest {
     assertNotNull(result);
     assertEquals(1, result.size());
     verify(positionMapper).mapStatus(status);
-    verify(positionRepository).findByStatus(Position.Status.ACTIVE);
+    verify(positionRepository).findAllWithInterviews();
     verify(positionMapper).toDtoList(positions);
   }
 

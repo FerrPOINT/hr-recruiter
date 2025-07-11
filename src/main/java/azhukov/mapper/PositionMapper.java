@@ -15,7 +15,10 @@ import org.mapstruct.*;
  * Маппер для преобразования между сущностями и DTO вакансий. Использует MapStruct для
  * автоматической генерации кода маппинга.
  */
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(
+    componentModel = "spring",
+    unmappedTargetPolicy = ReportingPolicy.IGNORE,
+    uses = {InterviewMapper.class, UserMapper.class})
 public interface PositionMapper extends CommonMapper {
 
   /** Преобразует Position entity в Position DTO */
@@ -24,15 +27,21 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "company", source = "company")
   @Mapping(target = "description", source = "description")
   @Mapping(target = "status", source = "status")
-  @Mapping(target = "ownerId", source = "createdBy.id")
-  @Mapping(target = "createdAt", source = "createdAt")
-  @Mapping(target = "updatedAt", source = "updatedAt")
+  @Mapping(target = "ownerId", source = "createdBy", qualifiedByName = "createdByToId")
+  @Mapping(
+      target = "createdAt",
+      source = "createdAt",
+      qualifiedByName = "positionLocalDateTimeToOffsetDateTime")
+  @Mapping(
+      target = "updatedAt",
+      source = "updatedAt",
+      qualifiedByName = "positionLocalDateTimeToOffsetDateTime")
   @Mapping(target = "publicLink", source = "publicLink")
   @Mapping(target = "topics", source = "topics")
   @Mapping(target = "minScore", source = "minScore")
   @Mapping(target = "avgScore", source = "avgScore")
   @Mapping(target = "team", source = "team")
-  @Mapping(target = "candidates", ignore = true) // Игнорируем для избежания циклических ссылок
+  @Mapping(target = "interviews", source = "interviews")
   @Mapping(target = "language", source = "language")
   @Mapping(target = "showOtherLang", source = "showOtherLang")
   @Mapping(target = "answerTime", source = "answerTime")
@@ -43,7 +52,6 @@ public interface PositionMapper extends CommonMapper {
   @Mapping(target = "questionType", source = "questionType")
   @Mapping(target = "questionsCount", source = "questionsCount")
   @Mapping(target = "checkType", source = "checkType")
-  @Mapping(target = "stats", expression = "java(calculatePositionStats(entity))")
   azhukov.model.Position toDto(Position entity);
 
   /** Преобразует PositionCreateRequest в Position entity */
@@ -131,6 +139,20 @@ public interface PositionMapper extends CommonMapper {
   /** Преобразование List<UUID> в List<UserEntity> (заглушка, будет заполнено в сервисе) */
   default List<UserEntity> mapTeam(List<UUID> teamIds) {
     return null; // Будет заполнено в сервисе через UserRepository
+  }
+
+  /** Преобразует LocalDateTime в OffsetDateTime для Position */
+  @Named("positionLocalDateTimeToOffsetDateTime")
+  default java.time.OffsetDateTime positionLocalDateTimeToOffsetDateTime(
+      java.time.LocalDateTime localDateTime) {
+    if (localDateTime == null) return null;
+    return localDateTime.atOffset(java.time.ZoneOffset.UTC);
+  }
+
+  /** Безопасно получает ID создателя позиции */
+  @Named("createdByToId")
+  default Long createdByToId(UserEntity createdBy) {
+    return createdBy != null ? createdBy.getId() : null;
   }
 
   /** Вычисляет статистику позиции на основе интервью */

@@ -5,17 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import azhukov.entity.UserEntity;
 import azhukov.repository.UserRepository;
 import java.util.Optional;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 
-@SpringBootTest
-@Transactional
-@Disabled("Интеграционный тест - требует базу данных")
-class DefaultAdminUserTest {
+public class DefaultAdminUserTest extends BaseIntegrationTest {
 
   @Autowired private UserRepository userRepository;
 

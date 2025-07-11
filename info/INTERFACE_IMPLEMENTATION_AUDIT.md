@@ -116,7 +116,6 @@
 - **Методы:** 4/4 реализованы
   - ✅ `getConversionAnalytics()` - аналитика конверсии
   - ✅ `getTimeToHireAnalytics()` - время до найма
-  - ✅ `getSourceAnalytics()` - аналитика источников
   - ✅ `getTeamPerformanceAnalytics()` - производительность команды
 
 ### **12. SettingsApi** ✅ **ПОЛНОСТЬЮ РЕАЛИЗОВАН**

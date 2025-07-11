@@ -1,5 +1,6 @@
 package azhukov.entity;
 
+import azhukov.config.JsonbConverter;
 import azhukov.model.AgentStatusEnum;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -36,7 +37,8 @@ public class Agent {
   @Builder.Default
   private AgentStatusEnum status = AgentStatusEnum.CREATING;
 
-  @Column(name = "config", columnDefinition = "JSONB")
+  @Convert(converter = JsonbConverter.class)
+  @Column(name = "config", columnDefinition = "jsonb")
   private String config; // JSON строка
 
   @Column(name = "interview_id")

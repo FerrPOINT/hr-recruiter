@@ -2058,11 +2058,6 @@ components:
         showOtherLang:
           type: boolean
           description: "Показывать результаты на другом языке"
-        tags:
-          type: array
-          items:
-            type: string
-          description: "Теги для поиска"
         answerTime:
           type: integer
           description: "Время на ответ в секундах"
@@ -2101,6 +2096,14 @@ components:
           type: integer
         isRequired:
           type: boolean
+        maxDuration:
+          type: integer
+          description: "Максимальная длительность ответа в секундах"
+        options:
+          type: array
+          items:
+            type: string
+          description: "Варианты ответов для вопросов типа CHOICE"
         evaluationCriteria:
           type: string
           description: "Критерии оценки ответа"
@@ -2120,10 +2123,20 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/CandidateStatusEnum'
-        source:
+        resumeUrl:
           type: string
-          enum: [direct, referral, jobBoard, social]
-          description: "Источник кандидата"
+          description: "URL резюме кандидата"
+        coverLetter:
+          type: string
+          description: "Сопроводительное письмо"
+        experienceYears:
+          type: integer
+          description: "Годы опыта работы"
+        skills:
+          type: array
+          items:
+            type: string
+          description: "Навыки кандидата"
     
     BaseUserFields:
       type: object
@@ -2205,18 +2218,14 @@ components:
               type: string
             publicLink:
               type: string
-            stats:
-              $ref: '#/components/schemas/PositionStats'
             team:
               type: array
               items:
                 $ref: '#/components/schemas/User'
-            branding:
-              $ref: '#/components/schemas/Branding'
-            candidates:
+            interviews:
               type: array
               items:
-                $ref: '#/components/schemas/Candidate'
+                $ref: '#/components/schemas/Interview'
             avgScore:
               type: number
               format: float
@@ -2400,8 +2409,6 @@ components:
         - $ref: '#/components/schemas/BaseCandidateFields'
         - type: object
           properties:
-            interview:
-              $ref: '#/components/schemas/Interview'
             positionId:
               type: integer
           required: [id, firstName, lastName, status, positionId, createdAt]
@@ -2468,6 +2475,32 @@ components:
           type: string
         aiScore:
           type: number
+        notes:
+          type: string
+          description: "Заметки по интервью"
+        voiceSessionId:
+          type: string
+          description: "ID голосовой сессии в ElevenLabs"
+        voiceAgentId:
+          type: string
+          description: "ID агента в ElevenLabs"
+        voiceEnabled:
+          type: boolean
+          description: "Включено ли голосовое интервью"
+        voiceLanguage:
+          type: string
+          description: "Язык голосового интервью"
+        voiceVoiceId:
+          type: string
+          description: "ID голоса в ElevenLabs"
+        voiceStartedAt:
+          type: string
+          format: date-time
+          description: "Время начала голосовой сессии"
+        voiceFinishedAt:
+          type: string
+          format: date-time
+          description: "Время завершения голосовой сессии"
         answers:
           type: array
           items:
@@ -2498,8 +2531,17 @@ components:
           type: string
         audioUrl:
           type: string
+        videoUrl:
+          type: string
+        rawTranscription:
+          type: string
+          description: "Сырой транскрибированный текст"
+        formattedTranscription:
+          type: string
+          description: "Отформатированный текст"
         transcript:
           type: string
+          description: "Транскрибированный текст (alias для formattedTranscription)"
         score:
           type: number
           format: float
@@ -2507,6 +2549,39 @@ components:
         scoreJustification:
           type: string
           description: "Обоснование оценки"
+        feedback:
+          type: string
+          description: "Обратная связь по ответу"
+        durationSeconds:
+          type: integer
+          description: "Длительность ответа в секундах"
+        isCorrect:
+          type: boolean
+          description: "Правильность ответа для вопросов типа CHOICE"
+        voiceSessionId:
+          type: string
+          description: "ID голосовой сессии"
+        voiceConfidence:
+          type: number
+          format: float
+          description: "Уверенность в распознавании речи (0.0-1.0)"
+        voiceEmotion:
+          type: string
+          description: "Определенная эмоция в голосе"
+        voiceSpeakerId:
+          type: string
+          description: "ID говорящего"
+        voiceAudioUrl:
+          type: string
+          description: "URL аудио файла ответа"
+        voiceProcessingTime:
+          type: integer
+          format: int64
+          description: "Время обработки в миллисекундах"
+        voiceQualityScore:
+          type: number
+          format: float
+          description: "Оценка качества аудио (0.0-1.0)"
         createdAt:
           type: string
           format: date-time
@@ -2687,22 +2762,6 @@ components:
         rejected:
           type: integer
           description: "Отклоненные кандидаты"
-        bySource:
-          type: object
-          properties:
-            direct:
-              type: integer
-              description: "Прямые кандидаты"
-            referral:
-              type: integer
-              description: "По рекомендации"
-            jobBoard:
-              type: integer
-              description: "С досок объявлений"
-            social:
-              type: integer
-              description: "Из социальных сетей"
-          description: "Группировка по источникам"
     
     InterviewStats:
       type: object

@@ -5,7 +5,6 @@ import azhukov.entity.Candidate;
 import azhukov.entity.Interview;
 import azhukov.entity.Position;
 import azhukov.model.CandidateStats;
-import azhukov.model.CandidateStatsBySource;
 import azhukov.model.InterviewStats;
 import azhukov.model.MonthlyReport;
 import azhukov.model.PaginatedResponse;
@@ -68,43 +67,6 @@ public class AnalyticsReportsController extends BaseController implements Analyt
     stats.setFinished(finished);
     stats.setHired(hired);
     stats.setRejected(rejected);
-
-    // Группировка по источникам
-    CandidateStatsBySource bySource = new CandidateStatsBySource();
-
-    // Используем более безопасный подход - получаем все записи и группируем в памяти
-    List<Candidate> allCandidates = candidateRepository.findAll();
-
-    long directCount =
-        allCandidates.stream()
-            .filter(c -> c.getSource() != null && "direct".equals(c.getSource()))
-            .count();
-    long referralCount =
-        allCandidates.stream()
-            .filter(c -> c.getSource() != null && "referral".equals(c.getSource()))
-            .count();
-    long jobBoardCount =
-        allCandidates.stream()
-            .filter(c -> c.getSource() != null && "jobBoard".equals(c.getSource()))
-            .count();
-    long socialCount =
-        allCandidates.stream()
-            .filter(c -> c.getSource() != null && "social".equals(c.getSource()))
-            .count();
-
-    log.info(
-        "Source counts - direct: {}, referral: {}, jobBoard: {}, social: {}",
-        directCount,
-        referralCount,
-        jobBoardCount,
-        socialCount);
-
-    bySource.setDirect(directCount);
-    bySource.setReferral(referralCount);
-    bySource.setJobBoard(jobBoardCount);
-    bySource.setSocial(socialCount);
-
-    stats.setBySource(bySource);
 
     return ResponseEntity.ok(stats);
   }

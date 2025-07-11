@@ -28,7 +28,7 @@ public class TestDataInitializer {
     if (admin == null) {
       admin = new UserEntity();
       admin.setEmail("admin@example.com");
-      String rawPassword = "adminpass";
+      String rawPassword = "admin";
       String hash = passwordEncoder.encode(rawPassword);
       admin.setPassword(hash);
       admin.setRole(UserEntity.Role.ADMIN);

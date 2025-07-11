@@ -18,31 +18,49 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PositionRepository extends BaseRepository<Position, Long> {
 
-  /** Находит все вакансии с загрузкой интервью */
-  @Override
-  @EntityGraph(attributePaths = {"interviews"})
-  List<Position> findAll();
+  /** Находит вакансию по ID с загрузкой интервью и кандидатов */
+  @Query(
+      "SELECT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate WHERE p.id = :id")
+  Optional<Position> findByIdWithInterviewsAndCandidates(@Param("id") Long id);
 
-  /** Находит все вакансии с пагинацией и загрузкой интервью */
+  /** Находит все вакансии с загрузкой только интервью */
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate")
+  List<Position> findAllWithInterviews();
+
+  /** Находит все вакансии с загрузкой только кандидатов */
+  @Query("SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.candidates")
+  List<Position> findAllWithCandidates();
+
+  /** Находит все вакансии без загрузки коллекций (для тестов) */
+  @Query("SELECT p FROM Position p")
+  List<Position> findAllSimple();
+
+  /** Находит все вакансии с пагинацией и загрузкой интервью и кандидатов */
   @Override
-  @EntityGraph(attributePaths = {"interviews"})
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH p.candidates")
   Page<Position> findAll(Pageable pageable);
 
-  /** Находит вакансии по статусу */
-  @EntityGraph(attributePaths = {"interviews"})
-  List<Position> findByStatus(Position.Status status);
+  /** Находит вакансии по статусу с загрузкой интервью и кандидатов */
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH p.candidates WHERE p.status = :status")
+  List<Position> findByStatus(@Param("status") Position.Status status);
 
-  /** Находит вакансии по статусу с пагинацией */
-  @EntityGraph(attributePaths = {"interviews"})
-  Page<Position> findByStatus(Position.Status status, Pageable pageable);
+  /** Находит вакансии по статусу с пагинацией и загрузкой интервью и кандидатов */
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH p.candidates WHERE p.status = :status")
+  Page<Position> findByStatus(@Param("status") Position.Status status, Pageable pageable);
 
-  /** Находит вакансии по компании */
-  @EntityGraph(attributePaths = {"interviews"})
-  List<Position> findByCompany(String company);
+  /** Находит вакансии по компании с загрузкой интервью и кандидатов */
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH p.candidates WHERE p.company = :company")
+  List<Position> findByCompany(@Param("company") String company);
 
-  /** Находит вакансии по создателю */
-  @EntityGraph(attributePaths = {"interviews"})
-  List<Position> findByCreatedBy(UserEntity createdBy);
+  /** Находит вакансии по создателю с загрузкой интервью и кандидатов */
+  @Query(
+      "SELECT DISTINCT p FROM Position p LEFT JOIN FETCH p.interviews i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH p.candidates WHERE p.createdBy = :createdBy")
+  List<Position> findByCreatedBy(@Param("createdBy") UserEntity createdBy);
 
   /** Находит вакансии по создателю с пагинацией */
   @EntityGraph(attributePaths = {"interviews"})
