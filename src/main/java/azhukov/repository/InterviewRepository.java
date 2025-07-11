@@ -123,6 +123,29 @@ public interface InterviewRepository extends BaseRepository<Interview, Long> {
   @Query("SELECT i FROM Interview i WHERE i.position.id = :positionId")
   Page<Interview> findByPositionId(@Param("positionId") Long positionId, Pageable pageable);
 
+  /** Находит собеседования с загруженными кандидатами и позициями (для избежания N+1) */
+  @Query(
+      "SELECT i FROM Interview i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH i.position WHERE i.position.id = :positionId")
+  List<Interview> findByPositionIdWithCandidateAndPosition(@Param("positionId") Long positionId);
+
+  /**
+   * Находит собеседования с пагинацией и загруженными кандидатами и позициями (для избежания N+1)
+   */
+  @Query("SELECT i FROM Interview i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH i.position")
+  Page<Interview> findAllWithCandidateAndPosition(Pageable pageable);
+
+  /**
+   * Находит собеседования с фильтрацией и загруженными кандидатами и позициями (для избежания N+1)
+   */
+  @Query(
+      "SELECT i FROM Interview i LEFT JOIN FETCH i.candidate LEFT JOIN FETCH i.position "
+          + "WHERE (:positionId IS NULL OR i.position.id = :positionId) "
+          + "AND (:candidateId IS NULL OR i.candidate.id = :candidateId)")
+  Page<Interview> findByPositionIdAndCandidateIdWithCandidateAndPosition(
+      @Param("positionId") Long positionId,
+      @Param("candidateId") Long candidateId,
+      Pageable pageable);
+
   /** Подсчитывает количество собеседований по статусу */
   long countByStatus(Interview.Status status);
 

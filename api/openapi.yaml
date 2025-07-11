@@ -2472,6 +2472,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InterviewAnswer'
+        candidate:
+          $ref: '#/components/schemas/Candidate'
+          description: "Данные кандидата"
       required:
         - id
         - candidateId

@@ -143,7 +143,8 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
             .findById(positionId)
             .orElseThrow(() -> new ResourceNotFoundException("Вакансия не найдена: " + positionId));
 
-    List<Interview> interviews = repository.findByPosition(position);
+    // Используем метод с JOIN FETCH для избежания N+1
+    List<Interview> interviews = repository.findByPositionIdWithCandidateAndPosition(positionId);
     return interviewMapper.toDtoList(interviews);
   }
 
@@ -157,7 +158,10 @@ public class InterviewService extends BaseService<Interview, Long, InterviewRepo
         candidateId,
         pageable);
 
-    Page<Interview> interviews = listInterviews(positionId, candidateId, pageable);
+    // Используем метод с JOIN FETCH для избежания N+1
+    Page<Interview> interviews =
+        repository.findByPositionIdAndCandidateIdWithCandidateAndPosition(
+            positionId, candidateId, pageable);
     return interviews.map(interviewMapper::toDto);
   }
 

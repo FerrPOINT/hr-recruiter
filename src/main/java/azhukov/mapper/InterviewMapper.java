@@ -26,6 +26,7 @@ public interface InterviewMapper extends CommonMapper {
   @Mapping(source = "result", target = "result")
   @Mapping(source = "answers", target = "answers")
   @Mapping(source = "aiScore", target = "aiScore")
+  @Mapping(source = "candidate", target = "candidate")
   @Mapping(
       source = "createdAt",
       target = "createdAt",
